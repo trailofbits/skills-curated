@@ -172,7 +172,7 @@ pic.php?url=cGljLnBocA==  # Base64 of pic.php
 # History files (information goldmine)
 /root/.bash_history
 /home/[user]/.bash_history
-/home/www/.bash_history   # Web user
+/home/[webuser]/.bash_history
 
 # Process information
 /proc/self/environ

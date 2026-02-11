@@ -26,7 +26,7 @@
 |-------------|-------------|--------------|
 | Hardcoded auth bypass | Fixed key/parameter decryption for direct login | Website builder CMS `lstate=515csmxSi1aTO9ysxvJ1Gpmnj7hHuPxjMdfZdEP49lJZ` |
 | Weak/default credentials | admin/admin, weblogic/12345678 | Classifieds platform Tomcat `admin:admin123456` |
-| Direct path access | Backend URL without authentication | Hobbyist association site `/Users/AssociationManage/` |
+| Direct path access | Backend URL without authentication | Hobbyist association site `/users/AssociationManage/` |
 | Authentication logic flaws | Client-side validation, CAPTCHA bypass | Classifieds platform CAPTCHA client-side refresh allows brute force |
 
 **Typical Bypass Techniques**:
