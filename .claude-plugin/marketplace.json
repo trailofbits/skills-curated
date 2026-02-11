@@ -50,6 +50,16 @@
         "url": "https://github.com/jthack"
       },
       "source": "./plugins/ffuf-web-fuzzing"
+    },
+    {
+      "name": "wooyun-legacy",
+      "version": "1.0.0",
+      "description": "Web vulnerability testing methodology distilled from 88,636 real-world cases from the WooYun vulnerability database (2010-2016)",
+      "author": {
+        "name": "tanweai / wooyun-legacy contributors",
+        "url": "https://github.com/tanweai/wooyun-legacy"
+      },
+      "source": "./plugins/wooyun-legacy"
     }
   ]
 }

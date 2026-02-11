@@ -60,6 +60,7 @@ Once merged, the skill is available to all Trail of Bits employees and anyone el
 | Plugin | Description |
 |--------|-------------|
 | [ffuf-web-fuzzing](plugins/ffuf-web-fuzzing/) | Expert guidance for ffuf web fuzzing during authorized penetration testing |
+| [wooyun-legacy](plugins/wooyun-legacy/) | Web vulnerability testing methodology from 88,636 real-world cases (WooYun 2010-2016) |
 
 ### Development
 
