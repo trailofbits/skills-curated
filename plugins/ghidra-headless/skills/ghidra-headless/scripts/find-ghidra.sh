@@ -22,7 +22,7 @@ SEARCH_PATHS=(
 )
 
 # Check GHIDRA_HOME environment variable first
-if [[ -n "$GHIDRA_HOME" ]]; then
+if [[ -n "${GHIDRA_HOME:-}" ]]; then
   HEADLESS="$GHIDRA_HOME/support/analyzeHeadless"
   if [[ -x "$HEADLESS" ]]; then
     echo "$HEADLESS"
@@ -43,7 +43,7 @@ for base_path in "${SEARCH_PATHS[@]}"; do
 done
 
 # Try to find it anywhere on the system as a last resort
-HEADLESS=$(find /opt /usr/local /Applications "$HOME" -name "analyzeHeadless" -type f 2>/dev/null | head -n 1)
+HEADLESS=$(find /opt /usr/local /Applications "$HOME" -maxdepth 5 -name "analyzeHeadless" -type f 2>/dev/null | head -n 1)
 if [[ -n "$HEADLESS" && -x "$HEADLESS" ]]; then
   echo "$HEADLESS"
   exit 0

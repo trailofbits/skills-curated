@@ -82,14 +82,15 @@ interface to `analyzeHeadless`.
 
 ### ExportAll.java
 
-Comprehensive export — runs all other exports and creates a summary.
-Best for initial analysis.
+Runs summary, decompilation, function list, strings, and interesting-pattern
+exports. Does not include call graph or symbols — run ExportCalls.java and
+ExportSymbols.java separately if needed. Best for initial analysis.
 
 **Output files:**
 - `{name}_summary.txt` — Overview: architecture, memory sections, function counts
 - `{name}_decompiled.c` — All functions decompiled to C
 - `{name}_functions.json` — Function list with signatures and calls
-- `{name}_strings.txt` — All strings found
+- `{name}_strings.txt` — All strings found (plain text; use ExportStrings.java for JSON)
 - `{name}_interesting.txt` — Functions matching security-relevant patterns
 
 ```bash
