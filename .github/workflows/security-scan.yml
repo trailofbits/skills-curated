@@ -23,4 +23,14 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@eac588ad8def6316056a12d4907a9d4d84ff7a3b  # v7.3.0
       - name: Run security scanner
-        run: uv run scripts/scan_plugin.py plugins/
+        run: |
+          set +e
+          uv run scripts/scan_plugin.py plugins/
+          status=$?
+          set -e
+          # Exit codes: 0 = clean, 1 = usage error, 2 = BLOCK, 3 = WARN
+          if [ "$status" -eq 3 ]; then
+            echo "::warning::Security scanner found WARN-level findings (review recommended)"
+            exit 0
+          fi
+          exit "$status"

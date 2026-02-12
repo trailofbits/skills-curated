@@ -6,8 +6,8 @@
 """Deterministic security scanner for imported plugins.
 
 Scans plugin directories for external network access, unicode tricks,
-and destructive operations. Exit codes: 0 = clean, 1 = BLOCK findings,
-2 = WARN only.
+and destructive operations. Exit codes: 0 = clean, 1 = usage error,
+2 = BLOCK findings, 3 = WARN only.
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ import sys
 import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 # ---------------------------------------------------------------------------
 # Data types
@@ -25,7 +26,7 @@ from pathlib import Path
 
 @dataclass(frozen=True, slots=True)
 class Finding:
-    level: str  # "BLOCK" or "WARN"
+    level: Literal["BLOCK", "WARN"]
     category: str
     path: str
     line: int  # 1-indexed
@@ -78,7 +79,8 @@ PUNYCODE_RE = re.compile(r"https?://[^\s/]*xn--")
 
 # Destructive commands
 DESTRUCTIVE_RE = re.compile(
-    r"\brm\s+-(r|rf|fr)\b"
+    r"\brm\s+-[rRf]*[rR][rRf]*\b"
+    r"|\brm\s+--recursive\b"
     r"|\brmdir\b"
     r"|\bshred\b"
     r"|\bunlink\b"
@@ -101,27 +103,35 @@ FENCE_OPEN_RE = re.compile(r"^(`{3,}|~{3,})")
 # ---------------------------------------------------------------------------
 
 
-def is_binary(path: Path) -> bool:
-    """Detect binary files by checking for null bytes in the first 8KB."""
+def _read_file_text(path: Path) -> str | None:
+    """Read a file as UTF-8 text, returning None for binary or unreadable files.
+
+    Detects binary files by checking for null bytes in the first 8 KB.
+    """
     try:
         chunk = path.read_bytes()[:8192]
     except OSError:
-        return True
-    return b"\x00" in chunk
+        print(f"Warning: Cannot read {path}", file=sys.stderr)
+        return None
+    if b"\x00" in chunk:
+        return None
+    try:
+        return path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        print(f"Warning: Cannot read {path}", file=sys.stderr)
+        return None
 
 
-def is_code_file(path: Path) -> bool:
-    return path.suffix.lower() in CODE_EXTENSIONS
+def markdown_code_ranges(lines: list[str]) -> frozenset[int]:
+    """Return the set of line indices that fall inside fenced code blocks.
 
-
-def markdown_code_ranges(lines: list[str]) -> list[tuple[int, int]]:
-    """Return (start, end) line index ranges for fenced code blocks.
-
-    Both start and end are inclusive 0-indexed line numbers.
+    Handles backtick and tilde fences. A closing fence must use the same
+    character as the opener and be at least as long.
     """
-    ranges: list[tuple[int, int]] = []
+    code_lines: set[int] = set()
     fence_start: int | None = None
-    fence_marker: str = ""
+    fence_char: str = ""
+    fence_len: int = 0
 
     for i, line in enumerate(lines):
         stripped = line.lstrip()
@@ -129,30 +139,30 @@ def markdown_code_ranges(lines: list[str]) -> list[tuple[int, int]]:
             m = FENCE_OPEN_RE.match(stripped)
             if m:
                 fence_start = i
-                fence_marker = m.group(1)[0]
+                fence_char = m.group(1)[0]
+                fence_len = len(m.group(1))
         else:
-            if stripped.startswith(fence_marker) and stripped.rstrip() == (
-                fence_marker * len(stripped.rstrip())
-            ):
-                close_char = stripped.rstrip()[0]
-                if close_char == fence_marker[0] and len(stripped.rstrip()) >= len(fence_marker):
-                    ranges.append((fence_start, i))
-                    fence_start = None
-                    fence_marker = ""
+            close = stripped.rstrip()
+            if close and all(c == fence_char for c in close) and len(close) >= fence_len:
+                for j in range(fence_start, i + 1):
+                    code_lines.add(j)
+                fence_start = None
+                fence_char = ""
+                fence_len = 0
 
-    return ranges
+    return frozenset(code_lines)
 
 
-def in_code_context(
+def _is_code_context(
     line_idx: int,
-    path: Path,
-    code_ranges: list[tuple[int, int]] | None,
+    suffix: str,
+    code_lines: frozenset[int] | None,
 ) -> bool:
     """Determine whether a line is in a code context."""
-    if is_code_file(path):
+    if suffix in CODE_EXTENSIONS:
         return True
-    if path.suffix.lower() == ".md" and code_ranges is not None:
-        return any(start <= line_idx <= end for start, end in code_ranges)
+    if suffix == ".md" and code_lines is not None:
+        return line_idx in code_lines
     return False
 
 
@@ -165,9 +175,10 @@ def check_unicode(
     line: str,
     line_idx: int,
     rel_path: str,
-    path: Path,
-    code_ranges: list[tuple[int, int]] | None,
+    suffix: str,
+    code_lines: frozenset[int] | None,
 ) -> list[Finding]:
+    """Check a line for dangerous unicode characters."""
     findings: list[Finding] = []
     lineno = line_idx + 1
 
@@ -194,18 +205,20 @@ def check_unicode(
                     f"U+{cp:04X} ({unicodedata.name(ch, 'UNKNOWN')})",
                 )
             )
-        elif cp > 0x7F and unicodedata.category(ch).startswith("L"):
-            is_code = in_code_context(line_idx, path, code_ranges)
-            if is_code:
-                findings.append(
-                    Finding(
-                        "BLOCK",
-                        "homoglyph",
-                        rel_path,
-                        lineno,
-                        f"{unicodedata.name(ch, 'UNKNOWN')} (U+{cp:04X}) in code context",
-                    )
+        elif (
+            cp > 0x7F
+            and unicodedata.category(ch).startswith("L")
+            and _is_code_context(line_idx, suffix, code_lines)
+        ):
+            findings.append(
+                Finding(
+                    "BLOCK",
+                    "homoglyph",
+                    rel_path,
+                    lineno,
+                    f"{unicodedata.name(ch, 'UNKNOWN')} (U+{cp:04X}) in code context",
                 )
+            )
 
     return findings
 
@@ -214,26 +227,28 @@ def check_network(
     line: str,
     line_idx: int,
     rel_path: str,
-    path: Path,
-    code_ranges: list[tuple[int, int]] | None,
+    suffix: str,
+    code_lines: frozenset[int] | None,
 ) -> list[Finding]:
+    """Check a line for network access patterns."""
     findings: list[Finding] = []
     lineno = line_idx + 1
-    is_code = in_code_context(line_idx, path, code_ranges)
+    is_code = _is_code_context(line_idx, suffix, code_lines)
 
     # Punycode URLs — always BLOCK
-    if PUNYCODE_RE.search(line):
+    punycode_match = PUNYCODE_RE.search(line)
+    if punycode_match:
         findings.append(
             Finding(
                 "BLOCK",
                 "punycode-url",
                 rel_path,
                 lineno,
-                PUNYCODE_RE.search(line).group(0),  # type: ignore[union-attr]
+                punycode_match.group(0),
             )
         )
 
-    # External URLs
+    # External URLs — strip trailing parens from markdown links
     for m in URL_RE.finditer(line):
         url = m.group(0).rstrip(")")
         if GITHUB_ATTR_RE.match(url) and not is_code:
@@ -293,15 +308,14 @@ def check_destructive(
     line: str,
     line_idx: int,
     rel_path: str,
-    path: Path,
-    code_ranges: list[tuple[int, int]] | None,
+    suffix: str,
+    code_lines: frozenset[int] | None,
 ) -> list[Finding]:
-    is_code = in_code_context(line_idx, path, code_ranges)
-    if not is_code:
+    """Check a line for destructive shell commands."""
+    if not _is_code_context(line_idx, suffix, code_lines):
         return []
 
-    m = DESTRUCTIVE_RE.search(line)
-    if m:
+    if DESTRUCTIVE_RE.search(line):
         return [
             Finding(
                 "WARN",
@@ -320,61 +334,40 @@ def check_destructive(
 
 
 def scan_file(path: Path, rel_path: str) -> list[Finding]:
+    """Scan a single file for security findings."""
     if path.name in SKIP_FILENAMES:
         return []
-    if is_binary(path):
-        return []
 
-    try:
-        text = path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
+    text = _read_file_text(path)
+    if text is None:
         return []
 
     lines = text.splitlines()
+    suffix = path.suffix.lower()
 
-    code_ranges: list[tuple[int, int]] | None = None
-    if path.suffix.lower() == ".md":
-        code_ranges = markdown_code_ranges(lines)
+    code_lines: frozenset[int] | None = None
+    if suffix == ".md":
+        code_lines = markdown_code_ranges(lines)
 
     findings: list[Finding] = []
     for idx, line in enumerate(lines):
-        findings.extend(
-            check_unicode(
-                line,
-                idx,
-                rel_path,
-                path,
-                code_ranges,
-            )
-        )
-        findings.extend(
-            check_network(
-                line,
-                idx,
-                rel_path,
-                path,
-                code_ranges,
-            )
-        )
-        findings.extend(
-            check_destructive(
-                line,
-                idx,
-                rel_path,
-                path,
-                code_ranges,
-            )
-        )
+        if not line.isascii():
+            findings.extend(check_unicode(line, idx, rel_path, suffix, code_lines))
+        findings.extend(check_network(line, idx, rel_path, suffix, code_lines))
+        findings.extend(check_destructive(line, idx, rel_path, suffix, code_lines))
 
     return findings
 
 
 def scan_plugin(plugin_dir: Path) -> list[Finding]:
+    """Scan all files in a plugin directory."""
     findings: list[Finding] = []
+    # Compute the plugins/ parent for relative path display
+    plugins_dir = plugin_dir.parent
     for path in sorted(plugin_dir.rglob("*")):
         if not path.is_file():
             continue
-        rel = str(path.relative_to(plugin_dir.parent.parent))
+        rel = str(path.relative_to(plugins_dir))
         findings.extend(scan_file(path, rel))
     return findings
 
@@ -384,33 +377,35 @@ def scan_plugin(plugin_dir: Path) -> list[Finding]:
 # ---------------------------------------------------------------------------
 
 
+def _discover_plugins(target: Path) -> list[Path]:
+    """Resolve target path to a list of plugin directories."""
+    if target.name == "plugins":
+        return sorted(d for d in target.iterdir() if d.is_dir() and (d / ".claude-plugin").is_dir())
+    if (target / ".claude-plugin").is_dir():
+        return [target]
+
+    print(
+        f"Error: {target} is not a plugin directory "
+        "(missing .claude-plugin/) and is not a plugins/ parent",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+
 def main() -> None:
     if len(sys.argv) != 2:
-        print(f"Usage: {sys.argv[0]} <plugin-dir | plugins/>", file=sys.stderr)
-        sys.exit(2)
+        print(
+            f"Usage: {sys.argv[0]} <plugin-dir | plugins/>",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     target = Path(sys.argv[1])
     if not target.is_dir():
         print(f"Error: {target} is not a directory", file=sys.stderr)
-        sys.exit(2)
+        sys.exit(1)
 
-    # Determine if scanning one plugin or all plugins
-    if target.name == "plugins" or (
-        target.name != "plugins" and (target / ".claude-plugin").is_dir()
-    ):
-        if target.name == "plugins":
-            plugin_dirs = sorted(
-                d for d in target.iterdir() if d.is_dir() and (d / ".claude-plugin").is_dir()
-            )
-        else:
-            plugin_dirs = [target]
-    else:
-        print(
-            f"Error: {target} is not a plugin directory "
-            "(missing .claude-plugin/) and is not a plugins/ parent",
-            file=sys.stderr,
-        )
-        sys.exit(2)
+    plugin_dirs = _discover_plugins(target)
 
     all_findings: list[Finding] = []
     for plugin_dir in plugin_dirs:
@@ -430,10 +425,17 @@ def main() -> None:
         else:
             has_warn = True
 
+    print(
+        f"\nSummary: {len(all_findings)} finding(s) — "
+        f"{sum(1 for f in all_findings if f.level == 'BLOCK')} BLOCK, "
+        f"{sum(1 for f in all_findings if f.level == 'WARN')} WARN",
+        file=sys.stderr,
+    )
+
     if has_block:
-        sys.exit(1)
-    if has_warn:
         sys.exit(2)
+    if has_warn:
+        sys.exit(3)
 
 
 if __name__ == "__main__":
