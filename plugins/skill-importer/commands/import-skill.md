@@ -253,7 +253,20 @@ Also verify:
 - All `{baseDir}/` paths in SKILL.md point to files that exist in the plugin
 - plugin.json `name` matches SKILL.md frontmatter `name`
 
-### Step 17: Quality self-review
+### Step 17: Security scan
+
+Run the security scanner on the new plugin:
+
+```bash
+uv run scripts/scan_plugin.py plugins/{name}/
+```
+
+If any BLOCK findings appear, fix them before proceeding. WARN findings
+should be reviewed — if the network access or destructive command is
+legitimate for the skill's purpose, note it in the PR description under
+a "Security Notes" section.
+
+### Step 18: Quality self-review
 
 Read through the final SKILL.md and verify:
 
@@ -267,7 +280,7 @@ Read through the final SKILL.md and verify:
 
 If any check fails, fix it before proceeding.
 
-### Step 18: Register in marketplace and README
+### Step 19: Register in marketplace and README
 
 **Update `.claude-plugin/marketplace.json`:**
 
@@ -300,7 +313,7 @@ category section. Format:
 
 ## Phase 5 — PR
 
-### Step 19: Clean up temp directory
+### Step 20: Clean up temp directory
 
 Remove the temporary directory created by the fetch script:
 
@@ -308,7 +321,7 @@ Remove the temporary directory created by the fetch script:
 rm -rf {output_dir}
 ```
 
-### Step 20: Create branch, commit, push, PR
+### Step 21: Create branch, commit, push, PR
 
 ```bash
 git checkout -b import/{name}
