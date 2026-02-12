@@ -1,0 +1,10 @@
+{
+  "name": "skill-importer",
+  "version": "1.0.0",
+  "description": "Import skills from GitHub into the curated marketplace. Downloads, transforms to plugin standards, validates, and creates a PR.",
+  "author": {
+    "name": "Trail of Bits",
+    "email": "opensource@trailofbits.com",
+    "url": "https://github.com/trailofbits"
+  }
+}
