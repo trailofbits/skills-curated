@@ -1,7 +1,6 @@
-# Information Disclosure Vulnerability Analysis Knowledge Base
+# Information Disclosure Vulnerability Analysis Methodology
 
-> In-depth analysis of 7,337 information disclosure vulnerabilities from 88,636 WooYun vulnerability cases
-> Data source: WooYun Vulnerability Database | Analysis date: 2026-01-23
+> Distilled from 7,337 cases | Data source: WooYun Vulnerability Database (2010-2016)
 
 ---
 

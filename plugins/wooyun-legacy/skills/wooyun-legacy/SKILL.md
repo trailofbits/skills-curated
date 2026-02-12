@@ -23,9 +23,12 @@ vulnerability cases reported to the WooYun platform (2010-2016).
 
 ## When to Use
 
+> All testing described here must be performed only against systems you
+> have written authorization to test.
+
 - Penetration testing web applications
 - Security code review (server-side or client-side)
-- Vulnerability research against web targets
+- Vulnerability research against web targets you have explicit authorization to test
 - Building security test cases or checklists
 - Assessing web application attack surface
 - Reviewing remediation effectiveness
@@ -113,8 +116,8 @@ Analysis chain:
 
 ## SQL Injection
 
-**Cases:** 27,732 | **Reference:** [sql-injection.md](references/sql-injection.md)
-| **Checklist:** [sql-injection-checklist.md](references/checklists/sql-injection-checklist.md)
+**Cases:** 27,732 | **Reference:** [sql-injection.md]({baseDir}/references/sql-injection.md)
+| **Checklist:** [sql-injection-checklist.md]({baseDir}/references/checklists/sql-injection-checklist.md)
 
 High-risk parameters: `id`, `sort_id`, `username`, `password`, `search`,
 `keyword`, `page`, `order`, `cat_id`
@@ -136,8 +139,8 @@ Core defense: parameterized queries (PreparedStatement / ORM binding).
 
 ## Cross-Site Scripting (XSS)
 
-**Cases:** 7,532 | **Reference:** [xss.md](references/xss.md)
-| **Checklist:** [xss-checklist.md](references/checklists/xss-checklist.md)
+**Cases:** 7,532 | **Reference:** [xss.md]({baseDir}/references/xss.md)
+| **Checklist:** [xss-checklist.md]({baseDir}/references/checklists/xss-checklist.md)
 
 Output points: user profile fields (nickname, bio), search reflections,
 file metadata (filename, alt text), email content (subject, body)
@@ -154,8 +157,8 @@ Core defense: context-aware output encoding + Content Security Policy.
 
 ## Command Execution
 
-**Cases:** 6,826 | **Reference:** [command-execution.md](references/command-execution.md)
-| **Checklist:** [command-execution-checklist.md](references/checklists/command-execution-checklist.md)
+**Cases:** 6,826 | **Reference:** [command-execution.md]({baseDir}/references/command-execution.md)
+| **Checklist:** [command-execution-checklist.md]({baseDir}/references/checklists/command-execution-checklist.md)
 
 Entry points: system command wrappers (ping, traceroute, nslookup),
 file operations (compress, decompress, image processing), code eval
@@ -179,8 +182,8 @@ allowlist acceptable inputs.
 
 ## File Upload
 
-**Cases:** 2,711 | **Reference:** [file-upload.md](references/file-upload.md)
-| **Checklist:** [file-upload-checklist.md](references/checklists/file-upload-checklist.md)
+**Cases:** 2,711 | **Reference:** [file-upload.md]({baseDir}/references/file-upload.md)
+| **Checklist:** [file-upload-checklist.md]({baseDir}/references/checklists/file-upload-checklist.md)
 
 Bypass detection:
 - Client-side validation: modify JS or send request directly
@@ -202,8 +205,8 @@ webroot, validate content type server-side.
 
 ## Path Traversal
 
-**Cases:** 2,854 | **Reference:** [path-traversal.md](references/path-traversal.md)
-| **Checklist:** [path-traversal-checklist.md](references/checklists/path-traversal-checklist.md)
+**Cases:** 2,854 | **Reference:** [path-traversal.md]({baseDir}/references/path-traversal.md)
+| **Checklist:** [path-traversal-checklist.md]({baseDir}/references/checklists/path-traversal-checklist.md)
 
 High-risk parameters: `file`, `path`, `filename`, `url`, `dir`,
 `template`, `page`, `include`, `download`
@@ -224,8 +227,8 @@ directories, never use user input in file paths directly.
 
 ## Unauthorized Access
 
-**Cases:** 14,377 | **Reference:** [unauthorized-access.md](references/unauthorized-access.md)
-| **Checklist:** [unauthorized-access-checklist.md](references/checklists/unauthorized-access-checklist.md)
+**Cases:** 14,377 | **Reference:** [unauthorized-access.md]({baseDir}/references/unauthorized-access.md)
+| **Checklist:** [unauthorized-access-checklist.md]({baseDir}/references/checklists/unauthorized-access-checklist.md)
 
 Access types:
 - Admin panel exposure: `/admin`, `/manager`, `/console`
@@ -242,8 +245,8 @@ session management, principle of least privilege.
 
 ## Information Disclosure
 
-**Cases:** 7,337 | **Reference:** [info-disclosure.md](references/info-disclosure.md)
-| **Checklist:** [info-disclosure-checklist.md](references/checklists/info-disclosure-checklist.md)
+**Cases:** 7,337 | **Reference:** [info-disclosure.md]({baseDir}/references/info-disclosure.md)
+| **Checklist:** [info-disclosure-checklist.md]({baseDir}/references/checklists/info-disclosure-checklist.md)
 
 Disclosure sources: error messages with stack traces, exposed `.git`
 or `.svn` directories, backup files (`.bak`, `.sql`, `.tar.gz`),
@@ -256,8 +259,8 @@ debug endpoints in production, audit publicly accessible files.
 
 ## Business Logic Flaws
 
-**Cases:** 8,292 | **Reference:** [logic-flaws.md](references/logic-flaws.md)
-| **Checklist:** [logic-flaws-checklist.md](references/checklists/logic-flaws-checklist.md)
+**Cases:** 8,292 | **Reference:** [logic-flaws.md]({baseDir}/references/logic-flaws.md)
+| **Checklist:** [logic-flaws-checklist.md]({baseDir}/references/checklists/logic-flaws-checklist.md)
 
 Vulnerability patterns:
 - Password reset: verification code in response body, step skipping,
@@ -285,12 +288,16 @@ documents. Each has a testing checklist extracted from real cases.
 
 | Category | Checklist |
 |----------|-----------|
-| CSRF | [csrf-checklist.md](references/checklists/csrf-checklist.md) |
-| SSRF | [ssrf-checklist.md](references/checklists/ssrf-checklist.md) |
-| Weak Passwords | [weak-password-checklist.md](references/checklists/weak-password-checklist.md) |
-| Misconfiguration | [misconfig-checklist.md](references/checklists/misconfig-checklist.md) |
-| Remote Code Execution | [rce-checklist.md](references/checklists/rce-checklist.md) |
-| XML External Entity (XXE) | [xxe-checklist.md](references/checklists/xxe-checklist.md) |
+| CSRF | [csrf-checklist.md]({baseDir}/references/checklists/csrf-checklist.md) |
+| SSRF | [ssrf-checklist.md]({baseDir}/references/checklists/ssrf-checklist.md) |
+| Weak Passwords | [weak-password-checklist.md]({baseDir}/references/checklists/weak-password-checklist.md) |
+| Misconfiguration | [misconfig-checklist.md]({baseDir}/references/checklists/misconfig-checklist.md) |
+| Remote Code Execution | [rce-checklist.md]({baseDir}/references/checklists/rce-checklist.md) |
+| XML External Entity (XXE) | [xxe-checklist.md]({baseDir}/references/checklists/xxe-checklist.md) |
+
+> **Note:** The RCE checklist covers deserialization, OGNL injection, and
+> framework-specific remote code execution — distinct from the OS command
+> injection focus of the Command Execution reference above.
 
 ---
 
@@ -300,8 +307,8 @@ Real-world penetration testing methodology examples (anonymized):
 
 | Case Study | Description |
 |------------|-------------|
-| [bank-penetration.md](references/bank-penetration.md) | Multi-stage attack chain against a financial institution |
-| [telecom-penetration.md](references/telecom-penetration.md) | Infrastructure penetration of a telecom carrier |
+| [bank-penetration.md]({baseDir}/references/bank-penetration.md) | Multi-stage attack chain against a financial institution |
+| [telecom-penetration.md]({baseDir}/references/telecom-penetration.md) | Infrastructure penetration of a telecom carrier |
 
 These demonstrate how individual vulnerabilities chain together into
 full compromise scenarios.

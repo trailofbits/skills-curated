@@ -1,6 +1,6 @@
-# Business Logic Flaw In-Depth Analysis Handbook
+# Business Logic Flaw Analysis Methodology
 
-> Distilled from real WooYun case database, covering 8,292 design defect/logic error vulnerabilities
+> Distilled from 8,292 cases | Data source: WooYun Vulnerability Database (2010-2016)
 
 ---
 

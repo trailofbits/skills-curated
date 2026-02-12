@@ -215,8 +215,7 @@ Service provider -> SMS/identity verification
 ---
 
 **Reference methodologies**:
-- See `{baseDir}/references/` for related vulnerability category analyses
-  (payment, amount tampering, password reset, authorization bypass)
+- See {baseDir}/references/logic-flaws.md (payment tampering, authorization bypass) and {baseDir}/references/sql-injection.md (injection techniques) for related methodology.
 
 **Representative case patterns**:
 - A major bank's system vulnerability leading to shell access (affecting third-party payment integrations)

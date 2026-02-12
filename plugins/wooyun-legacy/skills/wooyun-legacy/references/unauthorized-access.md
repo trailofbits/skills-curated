@@ -1,6 +1,6 @@
-# Unauthorized Access Vulnerability Analysis Knowledge Base
+# Unauthorized Access Vulnerability Analysis Methodology
 
-> Distilled from 14,377 unauthorized access-related vulnerabilities out of 88,636 total in the WooYun vulnerability database
+> Distilled from 14,377 cases | Data source: WooYun Vulnerability Database (2010-2016)
 
 ---
 

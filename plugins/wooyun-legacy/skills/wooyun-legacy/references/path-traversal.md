@@ -1,8 +1,8 @@
-# Path Traversal / Arbitrary File Read Vulnerability Analysis Knowledge Base
+# Path Traversal Vulnerability Analysis Methodology
 
-> Meta-knowledge distilled from 50 real cases in the WooYun vulnerability database
-> Generated: 2026-01-23
-> Data source: wooyun_vulnerabilities.json
+> Distilled from 2,854 cases | Data source: WooYun Vulnerability Database (2010-2016)
+
+**Sections:** [1. Parameter Patterns](#1-vulnerable-parameter-naming-patterns) | [2. Traversal Payloads](#2-directory-traversal-payload-reference) | [3. Sensitive File Targets](#3-sensitive-file-read-targets) | [4. Vulnerable Functions](#4-high-frequency-vulnerable-function-points) | [5. Code Patterns](#5-vulnerable-code-pattern-analysis) | [6. Filter Bypass](#6-filter-bypass-techniques-summary) | [7. Case Library](#7-generic-vulnerability-case-library) | [8. Detection Checklist](#8-vulnerability-discovery-detection-checklist) | [9. Defense](#9-defense-hardening-recommendations) | [10. Case Index](#10-reference-case-index) | [11. Meta-Analysis](#11-meta-analysis-methodology) | [12. Cloud Hosting Case](#12-cloud-hosting-case-analysis-wooyun-2015-0124527)
 
 ---
 
