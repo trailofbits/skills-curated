@@ -5,13 +5,13 @@ Import skills from GitHub into the curated marketplace. Downloads source files, 
 ## Installation
 
 ```
-/plugin install trailofbits/skills-curated/plugins/skill-importer
+/plugin install trailofbits/skills-curated/plugins/trailofbits
 ```
 
 ## Usage
 
 ```
-/import-skill https://github.com/mitsuhiko/agent-stuff/tree/main/skills/ghidra
+/trailofbits:import-skill https://github.com/mitsuhiko/agent-stuff/tree/main/skills/ghidra
 ```
 
 Accepts GitHub URLs in several formats:

@@ -23,7 +23,7 @@ Everything here has been code-reviewed by Trail of Bits staff. We're sharing it 
 |--------|-------------|
 | [planning-with-files](plugins/planning-with-files/) | File-based planning with persistent markdown for complex multi-step tasks |
 | [skill-extractor](plugins/skill-extractor/) | Extract reusable skills from work sessions |
-| [skill-importer](plugins/skill-importer/) | Import skills from GitHub into the curated marketplace |
+| [trailofbits](plugins/trailofbits/) | Import skills from GitHub into the curated marketplace |
 
 ### Security
 

@@ -644,9 +644,10 @@ def _parse_args() -> argparse.Namespace:
         description="Deterministic security scanner for imported plugins.",
     )
     parser.add_argument(
-        "target",
+        "targets",
         type=Path,
-        help="Plugin directory or plugins/ parent directory",
+        nargs="+",
+        help="Plugin directory(ies) or plugins/ parent directory",
     )
     parser.add_argument(
         "--format",
@@ -660,17 +661,14 @@ def _parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = _parse_args()
-    target: Path = args.target
-
-    if not target.is_dir():
-        print(f"Error: {target} is not a directory", file=sys.stderr)
-        sys.exit(1)
-
-    plugin_dirs = _discover_plugins(target)
 
     all_findings: list[Finding] = []
-    for plugin_dir in plugin_dirs:
-        all_findings.extend(scan_plugin(plugin_dir))
+    for target in args.targets:
+        if not target.is_dir():
+            print(f"Error: {target} is not a directory", file=sys.stderr)
+            sys.exit(1)
+        for plugin_dir in _discover_plugins(target):
+            all_findings.extend(scan_plugin(plugin_dir))
 
     if args.output_format == "markdown":
         print(_format_markdown(all_findings))

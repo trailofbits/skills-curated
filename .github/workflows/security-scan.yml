@@ -28,8 +28,20 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
+          # Get changed files and extract unique plugin directories
+          changed=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/files" \
+            --paginate --jq '.[].filename')
+          changed_plugins=$(echo "$changed" \
+            | sed -n 's|^\(plugins/[^/]*\)/.*|\1|p' \
+            | sort -u) || true
+
           # Always run if security-scan label is present
           if [[ "$HAS_LABEL" == 'true' ]]; then
+            if [[ -n "$changed_plugins" ]]; then
+              echo "$changed_plugins" > changed-plugins.txt
+            else
+              echo "plugins/" > changed-plugins.txt
+            fi
             echo "run=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -39,9 +51,8 @@ jobs:
             exit 0
           fi
           # Run if any plugins/ files changed
-          changed=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/files" \
-            --paginate --jq '.[].filename')
-          if echo "$changed" | grep -q '^plugins/'; then
+          if [[ -n "$changed_plugins" ]]; then
+            echo "$changed_plugins" > changed-plugins.txt
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"
@@ -60,7 +71,8 @@ jobs:
         id: scan
         run: |
           set +e
-          uv run scripts/scan_plugin.py --format=markdown plugins/ > scan-report.md
+          xargs uv run scripts/scan_plugin.py --format=markdown \
+            < changed-plugins.txt > scan-report.md
           echo "exit_code=$?" >> "$GITHUB_OUTPUT"
 
       - name: Find existing comment
