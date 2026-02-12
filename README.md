@@ -37,6 +37,29 @@ Everything here has been code-reviewed by Trail of Bits staff. We're sharing it 
 |--------|-------------|
 | [humanizer](plugins/humanizer/) | Identifies and removes AI writing patterns to make text sound natural |
 
+### OpenAI (Converted)
+
+Auto-converted from [openai/skills](https://github.com/openai/skills) using `scripts/convert_openai_skills.py`. Portable skills only (no MCP or OpenAI API dependencies).
+
+| Plugin | Description |
+|--------|-------------|
+| [openai-cloudflare-deploy](plugins/openai-cloudflare-deploy/) | Deploy applications to Cloudflare Workers and Pages |
+| [openai-develop-web-game](plugins/openai-develop-web-game/) | Build and iterate on web games (HTML/JS) with a dev + testing loop |
+| [openai-doc](plugins/openai-doc/) | Read, create, and edit `.docx` documents with formatting fidelity |
+| [openai-gh-address-comments](plugins/openai-gh-address-comments/) | Address review and issue comments on GitHub PRs |
+| [openai-gh-fix-ci](plugins/openai-gh-fix-ci/) | Debug and fix failing GitHub Actions CI checks |
+| [openai-jupyter-notebook](plugins/openai-jupyter-notebook/) | Create, scaffold, and edit Jupyter notebooks |
+| [openai-netlify-deploy](plugins/openai-netlify-deploy/) | Deploy web projects to Netlify using the CLI |
+| [openai-pdf](plugins/openai-pdf/) | Read, create, and review PDF files with layout awareness |
+| [openai-playwright](plugins/openai-playwright/) | Automate real browsers from the terminal via playwright-cli |
+| [openai-screenshot](plugins/openai-screenshot/) | Take desktop or system screenshots |
+| [openai-security-best-practices](plugins/openai-security-best-practices/) | Language and framework specific security best-practice reviews |
+| [openai-security-ownership-map](plugins/openai-security-ownership-map/) | Build security ownership topology from git history |
+| [openai-security-threat-model](plugins/openai-security-threat-model/) | Repository-grounded threat modeling with trust boundaries and abuse paths |
+| [openai-sentry](plugins/openai-sentry/) | Inspect Sentry issues and summarize production errors |
+| [openai-spreadsheet](plugins/openai-spreadsheet/) | Create, edit, and analyze spreadsheets (`.xlsx`, `.csv`) |
+| [openai-yeet](plugins/openai-yeet/) | Stage, commit, push, and open a GitHub PR in one flow |
+
 ## How It Works
 
 There are three ways to get a skill approved for use:

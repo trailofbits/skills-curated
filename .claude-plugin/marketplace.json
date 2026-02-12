@@ -60,6 +60,166 @@
         "url": "https://github.com/tanweai/wooyun-legacy"
       },
       "source": "./plugins/wooyun-legacy"
+    },
+    {
+      "name": "openai-cloudflare-deploy",
+      "version": "1.0.0",
+      "description": "Deploy applications and infrastructure to Cloudflare using Workers, Pages, and related platform services. Use when the user asks to deploy, host, publish, or set up a project on Cloudflare. Originally from OpenAI's curated skills catalog.",
+      "author": {
+        "name": "OpenAI",
+        "url": "https://github.com/openai/skills"
+      },
+      "source": "./plugins/openai-cloudflare-deploy"
+    },
+    {
+      "name": "openai-develop-web-game",
+      "version": "1.0.0",
+      "description": "Use when the agent is building or iterating on a web game (HTML/JS) and needs a reliable development + testing loop: implement small changes, run a Playwright-based test script with short input bursts and intentional pauses, inspect screenshots/text, and review console errors with render_game_to_text. Originally from OpenAI's curated skills catalog.",
+      "author": {
+        "name": "OpenAI",
+        "url": "https://github.com/openai/skills"
+      },
+      "source": "./plugins/openai-develop-web-game"
+    },
+    {
+      "name": "openai-doc",
+      "version": "1.0.0",
+      "description": "Use when the task involves reading, creating, or editing `.docx` documents, especially when formatting or layout fidelity matters; prefer `python-docx` plus the bundled `scripts/render_docx.py` for visual checks. Originally from OpenAI's curated skills catalog.",
+      "author": {
+        "name": "OpenAI",
+        "url": "https://github.com/openai/skills"
+      },
+      "source": "./plugins/openai-doc"
+    },
+    {
+      "name": "openai-gh-address-comments",
+      "version": "1.0.0",
+      "description": "Help address review/issue comments on the open GitHub PR for the current branch using gh CLI; verify gh auth first and prompt the user to authenticate if not logged in. Originally from OpenAI's curated skills catalog.",
+      "author": {
+        "name": "OpenAI",
+        "url": "https://github.com/openai/skills"
+      },
+      "source": "./plugins/openai-gh-address-comments"
+    },
+    {
+      "name": "openai-gh-fix-ci",
+      "version": "1.0.0",
+      "description": "Use when a user asks to debug or fix failing GitHub PR checks that run in GitHub Actions; use `gh` to inspect checks and logs, summarize failure context, draft a fix plan, and implement only after explicit approval. Treat external providers (for example Buildkite) as out of scope and report only the details URL. Originally from OpenAI's curated skills catalog.",
+      "author": {
+        "name": "OpenAI",
+        "url": "https://github.com/openai/skills"
+      },
+      "source": "./plugins/openai-gh-fix-ci"
+    },
+    {
+      "name": "openai-jupyter-notebook",
+      "version": "1.0.0",
+      "description": "Use when the user asks to create, scaffold, or edit Jupyter notebooks (`.ipynb`) for experiments, explorations, or tutorials; prefer the bundled templates and run the helper script `new_notebook.py` to generate a clean starting notebook. Originally from OpenAI's curated skills catalog.",
+      "author": {
+        "name": "OpenAI",
+        "url": "https://github.com/openai/skills"
+      },
+      "source": "./plugins/openai-jupyter-notebook"
+    },
+    {
+      "name": "openai-netlify-deploy",
+      "version": "1.0.0",
+      "description": "Deploy web projects to Netlify using the Netlify CLI (`npx netlify`). Use when the user asks to deploy, host, publish, or link a site/repo on Netlify, including preview and production deploys. Originally from OpenAI's curated skills catalog.",
+      "author": {
+        "name": "OpenAI",
+        "url": "https://github.com/openai/skills"
+      },
+      "source": "./plugins/openai-netlify-deploy"
+    },
+    {
+      "name": "openai-pdf",
+      "version": "1.0.0",
+      "description": "Use when tasks involve reading, creating, or reviewing PDF files where rendering and layout matter; prefer visual checks by rendering pages (Poppler) and use Python tools such as `reportlab`, `pdfplumber`, and `pypdf` for generation and extraction. Originally from OpenAI's curated skills catalog.",
+      "author": {
+        "name": "OpenAI",
+        "url": "https://github.com/openai/skills"
+      },
+      "source": "./plugins/openai-pdf"
+    },
+    {
+      "name": "openai-playwright",
+      "version": "1.0.0",
+      "description": "Use when the task requires automating a real browser from the terminal (navigation, form filling, snapshots, screenshots, data extraction, UI-flow debugging) via `playwright-cli` or the bundled wrapper script. Originally from OpenAI's curated skills catalog.",
+      "author": {
+        "name": "OpenAI",
+        "url": "https://github.com/openai/skills"
+      },
+      "source": "./plugins/openai-playwright"
+    },
+    {
+      "name": "openai-screenshot",
+      "version": "1.0.0",
+      "description": "Use when the user explicitly asks for a desktop or system screenshot (full screen, specific app or window, or a pixel region), or when tool-specific capture capabilities are unavailable and an OS-level capture is needed. Originally from OpenAI's curated skills catalog.",
+      "author": {
+        "name": "OpenAI",
+        "url": "https://github.com/openai/skills"
+      },
+      "source": "./plugins/openai-screenshot"
+    },
+    {
+      "name": "openai-security-best-practices",
+      "version": "1.0.0",
+      "description": "Perform language and framework specific security best-practice reviews and suggest improvements. Trigger only when the user explicitly requests security best practices guidance, a security review/report, or secure-by-default coding help. Trigger only for supported languages (python, javascript/typescript, go). Do not trigger for general code review, debugging, or non-security tasks. Originally from OpenAI's curated skills catalog.",
+      "author": {
+        "name": "OpenAI",
+        "url": "https://github.com/openai/skills"
+      },
+      "source": "./plugins/openai-security-best-practices"
+    },
+    {
+      "name": "openai-security-ownership-map",
+      "version": "1.0.0",
+      "description": "Analyze git repositories to build a security ownership topology (people-to-file), compute bus factor and sensitive-code ownership, and export CSV/JSON for graph databases and visualization. Trigger only when the user explicitly wants a security-oriented ownership or bus-factor analysis grounded in git history (for example: orphaned sensitive code, security maintainers, CODEOWNERS reality checks for risk, sensitive hotspots, or ownership clusters). Do not trigger for general maintainer lists or non-security ownership questions. Originally from OpenAI's curated skills catalog.",
+      "author": {
+        "name": "OpenAI",
+        "url": "https://github.com/openai/skills"
+      },
+      "source": "./plugins/openai-security-ownership-map"
+    },
+    {
+      "name": "openai-security-threat-model",
+      "version": "1.0.0",
+      "description": "Repository-grounded threat modeling that enumerates trust boundaries, assets, attacker capabilities, abuse paths, and mitigations, and writes a concise Markdown threat model. Trigger only when the user explicitly asks to threat model a codebase or path, enumerate threats/abuse paths, or perform AppSec threat modeling. Do not trigger for general architecture summaries, code review, or non-security design work. Originally from OpenAI's curated skills catalog.",
+      "author": {
+        "name": "OpenAI",
+        "url": "https://github.com/openai/skills"
+      },
+      "source": "./plugins/openai-security-threat-model"
+    },
+    {
+      "name": "openai-sentry",
+      "version": "1.0.0",
+      "description": "Use when the user asks to inspect Sentry issues or events, summarize recent production errors, or pull basic Sentry health data via the Sentry API; perform read-only queries with the bundled script and require `SENTRY_AUTH_TOKEN`. Originally from OpenAI's curated skills catalog.",
+      "author": {
+        "name": "OpenAI",
+        "url": "https://github.com/openai/skills"
+      },
+      "source": "./plugins/openai-sentry"
+    },
+    {
+      "name": "openai-spreadsheet",
+      "version": "1.0.0",
+      "description": "Use when tasks involve creating, editing, analyzing, or formatting spreadsheets (`.xlsx`, `.csv`, `.tsv`) using Python (`openpyxl`, `pandas`), especially when formulas, references, and formatting need to be preserved and verified. Originally from OpenAI's curated skills catalog.",
+      "author": {
+        "name": "OpenAI",
+        "url": "https://github.com/openai/skills"
+      },
+      "source": "./plugins/openai-spreadsheet"
+    },
+    {
+      "name": "openai-yeet",
+      "version": "1.0.0",
+      "description": "Use only when the user explicitly asks to stage, commit, push, and open a GitHub pull request in one flow using the GitHub CLI (`gh`). Originally from OpenAI's curated skills catalog.",
+      "author": {
+        "name": "OpenAI",
+        "url": "https://github.com/openai/skills"
+      },
+      "source": "./plugins/openai-yeet"
     }
   ]
 }

@@ -1,0 +1,9 @@
+{
+  "name": "openai-cloudflare-deploy",
+  "version": "1.0.0",
+  "description": "Deploy applications and infrastructure to Cloudflare using Workers, Pages, and related platform services. Use when the user asks to deploy, host, publish, or set up a project on Cloudflare. Originally from OpenAI's curated skills catalog.",
+  "author": {
+    "name": "OpenAI",
+    "url": "https://github.com/openai/skills"
+  }
+}

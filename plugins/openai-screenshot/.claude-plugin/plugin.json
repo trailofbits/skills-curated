@@ -1,0 +1,9 @@
+{
+  "name": "openai-screenshot",
+  "version": "1.0.0",
+  "description": "Use when the user explicitly asks for a desktop or system screenshot (full screen, specific app or window, or a pixel region), or when tool-specific capture capabilities are unavailable and an OS-level capture is needed. Originally from OpenAI's curated skills catalog.",
+  "author": {
+    "name": "OpenAI",
+    "url": "https://github.com/openai/skills"
+  }
+}

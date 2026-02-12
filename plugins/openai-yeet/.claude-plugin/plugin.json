@@ -1,0 +1,9 @@
+{
+  "name": "openai-yeet",
+  "version": "1.0.0",
+  "description": "Use only when the user explicitly asks to stage, commit, push, and open a GitHub pull request in one flow using the GitHub CLI (`gh`). Originally from OpenAI's curated skills catalog.",
+  "author": {
+    "name": "OpenAI",
+    "url": "https://github.com/openai/skills"
+  }
+}
