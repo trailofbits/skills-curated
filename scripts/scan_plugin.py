@@ -21,6 +21,7 @@ Exit codes: 0 = clean, 1 = usage error, 2 = BLOCK findings,
 
 from __future__ import annotations
 
+import argparse
 import re
 import sys
 import unicodedata
@@ -584,15 +585,83 @@ def _discover_plugins(target: Path) -> list[Path]:
     sys.exit(1)
 
 
-def main() -> None:
-    if len(sys.argv) != 2:
-        print(
-            f"Usage: {sys.argv[0]} <plugin-dir | plugins/>",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+def _escape_md_table(text: str) -> str:
+    """Escape pipe characters so text doesn't break markdown tables."""
+    return text.replace("|", "\\|")
 
-    target = Path(sys.argv[1])
+
+def _format_markdown(findings: list[Finding]) -> str:
+    """Format findings as a GitHub-flavored markdown report."""
+    if not findings:
+        return "<!-- security-scan -->\nNo security findings."
+
+    blocks = [f for f in findings if f.level == "BLOCK"]
+    warns = [f for f in findings if f.level == "WARN"]
+
+    parts: list[str] = [
+        "<!-- security-scan -->",
+        "## Security Scanner Report",
+        "",
+        f"**{len(findings)}** finding(s): **{len(blocks)}** BLOCK, **{len(warns)}** WARN",
+    ]
+
+    for label, subset in [("BLOCK", blocks), ("WARN", warns)]:
+        if not subset:
+            continue
+        parts.append("")
+        parts.append(f"### {label} findings")
+        parts.append("")
+        parts.append("| Category | File | Line | Detail |")
+        parts.append("|----------|------|------|--------|")
+        for f in subset:
+            detail = f.detail[:80]
+            detail = _escape_md_table(detail)
+            parts.append(f"| {f.category} | {f.path} | {f.line} | `{detail}` |")
+
+    return "\n".join(parts) + "\n"
+
+
+def _format_text(findings: list[Finding]) -> None:
+    """Print findings in plain-text format (original behavior)."""
+    if not findings:
+        print("No findings.")
+        return
+
+    for f in findings:
+        tag = "BLOCK" if f.level == "BLOCK" else "WARN "
+        print(f"{tag}  {f.category:<18s} {f.path}:{f.line:<6d} {f.detail}")
+
+    print(
+        f"\nSummary: {len(findings)} finding(s) — "
+        f"{sum(1 for f in findings if f.level == 'BLOCK')} BLOCK, "
+        f"{sum(1 for f in findings if f.level == 'WARN')} WARN",
+        file=sys.stderr,
+    )
+
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Deterministic security scanner for imported plugins.",
+    )
+    parser.add_argument(
+        "target",
+        type=Path,
+        help="Plugin directory or plugins/ parent directory",
+    )
+    parser.add_argument(
+        "--format",
+        choices=["text", "markdown"],
+        default="text",
+        dest="output_format",
+        help="Output format (default: text)",
+    )
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = _parse_args()
+    target: Path = args.target
+
     if not target.is_dir():
         print(f"Error: {target} is not a directory", file=sys.stderr)
         sys.exit(1)
@@ -603,26 +672,13 @@ def main() -> None:
     for plugin_dir in plugin_dirs:
         all_findings.extend(scan_plugin(plugin_dir))
 
-    if not all_findings:
-        print("No findings.")
-        sys.exit(0)
+    if args.output_format == "markdown":
+        print(_format_markdown(all_findings))
+    else:
+        _format_text(all_findings)
 
-    has_block = False
-    has_warn = False
-    for f in all_findings:
-        tag = "BLOCK" if f.level == "BLOCK" else "WARN "
-        print(f"{tag}  {f.category:<18s} {f.path}:{f.line:<6d} {f.detail}")
-        if f.level == "BLOCK":
-            has_block = True
-        else:
-            has_warn = True
-
-    print(
-        f"\nSummary: {len(all_findings)} finding(s) — "
-        f"{sum(1 for f in all_findings if f.level == 'BLOCK')} BLOCK, "
-        f"{sum(1 for f in all_findings if f.level == 'WARN')} WARN",
-        file=sys.stderr,
-    )
+    has_block = any(f.level == "BLOCK" for f in all_findings)
+    has_warn = any(f.level == "WARN" for f in all_findings)
 
     if has_block:
         sys.exit(2)

@@ -1,13 +1,13 @@
 name: Security Scan
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, labeled]
 
 permissions:
   contents: read
+  pull-requests: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -18,19 +18,75 @@ jobs:
     name: Plugin security scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-        with:
-          persist-credentials: false
-      - uses: astral-sh/setup-uv@eac588ad8def6316056a12d4907a9d4d84ff7a3b  # v7.3.0
-      - name: Run security scanner
+      - name: Check if scan needed
+        id: trigger
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EVENT_ACTION: ${{ github.event.action }}
+          HAS_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'security-scan') }}
+          REPO: ${{ github.repository }}
         run: |
-          set +e
-          uv run scripts/scan_plugin.py plugins/
-          status=$?
-          set -e
-          # Exit codes: 0 = clean, 1 = usage error, 2 = BLOCK, 3 = WARN
-          if [ "$status" -eq 3 ]; then
-            echo "::warning::Security scanner found WARN-level findings (review recommended)"
+          set -euo pipefail
+          # Always run if security-scan label is present
+          if [[ "$HAS_LABEL" == 'true' ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          exit "$status"
+          # Skip other label events (unrelated labels)
+          if [[ "$EVENT_ACTION" == 'labeled' ]]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Run if any plugins/ files changed
+          changed=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/files" \
+            --paginate --jq '.[].filename')
+          if echo "$changed" | grep -q '^plugins/'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        if: steps.trigger.outputs.run == 'true'
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@eac588ad8def6316056a12d4907a9d4d84ff7a3b  # v7.3.0
+        if: steps.trigger.outputs.run == 'true'
+
+      - name: Run security scanner
+        if: steps.trigger.outputs.run == 'true'
+        id: scan
+        run: |
+          set +e
+          uv run scripts/scan_plugin.py --format=markdown plugins/ > scan-report.md
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Find existing comment
+        if: steps.trigger.outputs.run == 'true'
+        uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad  # v4.0.0
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: github-actions[bot]
+          body-includes: <!-- security-scan -->
+
+      - name: Post or update comment
+        if: steps.trigger.outputs.run == 'true' && steps.scan.outputs.exit_code != '0' && steps.scan.outputs.exit_code != '1'
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9  # v5.0.0
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: scan-report.md
+          edit-mode: replace
+
+      - name: Delete comment if clean
+        if: steps.trigger.outputs.run == 'true' && steps.scan.outputs.exit_code == '0' && steps.find-comment.outputs.comment-id != ''
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9  # v5.0.0
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          body: |
+            <!-- security-scan -->
+            No security findings.
+          edit-mode: replace
