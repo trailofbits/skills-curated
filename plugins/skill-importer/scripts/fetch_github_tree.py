@@ -7,12 +7,15 @@
 
 Recursively downloads files from a GitHub repo path and writes
 them to a local directory. Prints a JSON manifest to stdout.
-"""
 
-from __future__ import annotations
+Note: Branch names with slashes (e.g., feature/foo) are not
+supported in URL parsing. Use the full tree URL and the script
+will capture only the first path segment as the branch name.
+"""
 
 import argparse
 import base64
+import binascii
 import json
 import re
 import subprocess
@@ -20,6 +23,12 @@ import sys
 import tempfile
 import time
 from pathlib import Path
+
+MAX_FILES = 200
+MAX_DEPTH = 10
+SUBPROCESS_TIMEOUT = 30
+# Polite delay between API calls to avoid rate-limit pressure
+API_DELAY_SECONDS = 0.3
 
 
 def run_gh(*args: str) -> str:
@@ -29,6 +38,7 @@ def run_gh(*args: str) -> str:
         capture_output=True,
         text=True,
         check=True,
+        timeout=SUBPROCESS_TIMEOUT,
     )
     return result.stdout
 
@@ -40,6 +50,7 @@ def check_gh_auth() -> None:
             ["gh", "auth", "status"],
             capture_output=True,
             check=True,
+            timeout=SUBPROCESS_TIMEOUT,
         )
     except FileNotFoundError:
         print(
@@ -50,6 +61,28 @@ def check_gh_auth() -> None:
     except subprocess.CalledProcessError:
         print(
             "Error: gh CLI not authenticated. Run 'gh auth login' first.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    except subprocess.TimeoutExpired:
+        print(
+            "Error: gh auth check timed out.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+
+def _validate_component(value: str, name: str) -> None:
+    """Reject path traversal and shell metacharacters."""
+    if re.search(r"[;$`|&<>\\\x00-\x1f]", value):
+        print(
+            f"Error: Invalid characters in {name}: {value[:200]}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    if ".." in value.split("/"):
+        print(
+            f"Error: Path traversal in {name}: {value[:200]}",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -65,6 +98,8 @@ def parse_github_url(url: str) -> tuple[str, str, str | None]:
       {owner}/{repo}  (shorthand: root path, default branch)
 
     For blob URLs, uses the parent directory.
+    Branch names with slashes are not supported; the regex
+    captures only the first segment after tree/blob.
 
     Returns:
         (repo, path, branch) where branch may be None
@@ -87,19 +122,24 @@ def parse_github_url(url: str) -> tuple[str, str, str | None]:
         branch = m.group(3)
         path = m.group(4) or ""
         if url_type == "blob" and "/" in path:
-            # Use parent directory for blob URLs
             path = path.rsplit("/", 1)[0]
         elif url_type == "blob":
             path = ""
+        _validate_component(repo, "repo")
+        _validate_component(branch, "branch")
+        if path:
+            _validate_component(path, "path")
         return repo, path, branch
 
-    # Shorthand: owner/repo (or owner/repo/extra but no tree/blob)
+    # Shorthand: owner/repo
     m = re.match(r"^([^/]+/[^/]+)$", cleaned)
     if m:
-        return m.group(1), "", None
+        repo = m.group(1)
+        _validate_component(repo, "repo")
+        return repo, "", None
 
     print(
-        f"Error: Could not parse GitHub URL: {url}\n"
+        f"Error: Could not parse GitHub URL: {url[:200]}\n"
         "Expected formats:\n"
         "  https://github.com/owner/repo/tree/branch/path\n"
         "  https://github.com/owner/repo/blob/branch/path\n"
@@ -109,32 +149,20 @@ def parse_github_url(url: str) -> tuple[str, str, str | None]:
     sys.exit(1)
 
 
-def get_default_branch(repo: str) -> str:
-    """Get the default branch for a repository."""
+def get_repo_metadata(repo: str) -> tuple[str, str | None]:
+    """Get the default branch and license in one API call."""
     raw = run_gh(
         "api",
         f"repos/{repo}",
         "--jq",
-        ".default_branch",
+        "{branch: .default_branch, license: .license.spdx_id}",
     )
-    return raw.strip()
-
-
-def get_repo_license(repo: str) -> str | None:
-    """Get the SPDX license identifier for a repository."""
-    try:
-        raw = run_gh(
-            "api",
-            f"repos/{repo}",
-            "--jq",
-            ".license.spdx_id",
-        )
-        license_id = raw.strip()
-        if license_id and license_id != "null" and license_id != "NOASSERTION":
-            return license_id
-    except subprocess.CalledProcessError:
-        pass
-    return None
+    data = json.loads(raw)
+    branch = data["branch"]
+    license_id = data.get("license")
+    if license_id in (None, "null", "NOASSERTION"):
+        license_id = None
+    return branch, license_id
 
 
 def fetch_file_content(repo: str, path: str) -> bytes | None:
@@ -150,7 +178,25 @@ def fetch_file_content(repo: str, path: str) -> bytes | None:
         if not content or content == "null":
             return None
         return base64.b64decode(content)
-    except (subprocess.CalledProcessError, Exception):
+    except subprocess.CalledProcessError as exc:
+        stderr = (exc.stderr or "").strip()
+        if "rate limit" in stderr.lower():
+            print(
+                "Error: GitHub API rate limit exceeded. "
+                "Wait a few minutes or check 'gh api rate_limit'.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        print(
+            f"Warning: Failed to fetch {path}: {stderr}",
+            file=sys.stderr,
+        )
+        return None
+    except binascii.Error:
+        print(
+            f"Warning: Invalid base64 for {path}, skipping.",
+            file=sys.stderr,
+        )
         return None
 
 
@@ -158,13 +204,27 @@ def fetch_tree(
     repo: str,
     path: str,
     *,
-    list_only: bool = False,
+    _depth: int = 0,
+    _file_count: int = 0,
 ) -> dict[str, bytes | None]:
     """Recursively fetch all files under a path.
 
-    Returns dict mapping relative paths to file content bytes.
-    If list_only is True, values are None (no content fetched).
+    Args:
+        repo: GitHub repo in 'owner/repo' format.
+        path: Directory path within the repo.
+        _depth: Current recursion depth (internal).
+        _file_count: Running file count (internal).
+
+    Returns:
+        Dict mapping relative paths to file content bytes.
     """
+    if _depth > MAX_DEPTH:
+        print(
+            f"Error: Maximum directory depth ({MAX_DEPTH}) exceeded at {path}.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     files: dict[str, bytes | None] = {}
     try:
         raw = run_gh(
@@ -174,13 +234,13 @@ def fetch_tree(
         entries = json.loads(raw)
     except subprocess.CalledProcessError:
         print(
-            f"Error: Path '{path}' not found in {repo}.",
+            f"Error: Path '{path[:200]}' not found in {repo}.",
             file=sys.stderr,
         )
         sys.exit(1)
     except json.JSONDecodeError:
         print(
-            f"Error: Unexpected response for {repo}/{path}.",
+            f"Error: Unexpected API response for {repo}/{path[:200]}.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -194,19 +254,33 @@ def fetch_tree(
         if not rel:
             rel = entry["name"]
 
+        # Reject paths with traversal components
+        if ".." in rel.split("/"):
+            print(
+                f"Warning: Skipping suspicious path: {rel}",
+                file=sys.stderr,
+            )
+            continue
+
         if entry["type"] == "file":
-            if list_only:
-                files[rel] = None
-            else:
-                content = fetch_file_content(repo, entry["path"])
-                files[rel] = content
-                time.sleep(0.5)
+            _file_count += 1
+            if _file_count > MAX_FILES:
+                print(
+                    f"Error: Too many files (>{MAX_FILES}). Use a more specific path.",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+            content = fetch_file_content(repo, entry["path"])
+            files[rel] = content
+            time.sleep(API_DELAY_SECONDS)
         elif entry["type"] == "dir":
             sub = fetch_tree(
                 repo,
                 entry["path"],
-                list_only=list_only,
+                _depth=_depth + 1,
+                _file_count=_file_count,
             )
+            _file_count += len(sub)
             for sub_path, sub_content in sub.items():
                 files[f"{rel}/{sub_path}"] = sub_content
 
@@ -217,11 +291,18 @@ def write_tree(
     files: dict[str, bytes | None],
     output_dir: Path,
 ) -> None:
-    """Write fetched files to disk."""
+    """Write fetched files to disk with path traversal protection."""
+    resolved_base = output_dir.resolve()
     for rel_path, content in files.items():
         if content is None:
             continue
-        out_file = output_dir / rel_path
+        out_file = (output_dir / rel_path).resolve()
+        if not str(out_file).startswith(str(resolved_base) + "/"):
+            print(
+                f"Error: Path traversal detected: {rel_path}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
         out_file.parent.mkdir(parents=True, exist_ok=True)
         out_file.write_bytes(content)
 
@@ -235,44 +316,17 @@ def main() -> None:
         "url",
         help="GitHub URL or owner/repo shorthand",
     )
-    parser.add_argument(
-        "--output-dir",
-        help="Directory to write files to (default: temp dir)",
-    )
-    parser.add_argument(
-        "--list",
-        action="store_true",
-        dest="list_only",
-        help="List files without downloading",
-    )
     args = parser.parse_args()
 
     check_gh_auth()
 
     repo, path, branch = parse_github_url(args.url)
 
+    default_branch, license_id = get_repo_metadata(repo)
     if branch is None:
-        branch = get_default_branch(repo)
+        branch = default_branch
 
-    license_id = get_repo_license(repo)
-
-    if args.list_only:
-        files = fetch_tree(repo, path, list_only=True)
-        manifest = {
-            "repo": repo,
-            "path": path,
-            "branch": branch,
-            "license": license_id,
-            "files": sorted(files.keys()),
-        }
-        print(json.dumps(manifest, indent=2))
-        return
-
-    if args.output_dir:
-        output_dir = Path(args.output_dir)
-        output_dir.mkdir(parents=True, exist_ok=True)
-    else:
-        output_dir = Path(tempfile.mkdtemp(prefix="skill-import-"))
+    output_dir = Path(tempfile.mkdtemp(prefix="skill-import-"))
 
     files = fetch_tree(repo, path)
     write_tree(files, output_dir)
