@@ -112,7 +112,9 @@ def _ensure_gh_authenticated() -> None:
         _run(["gh", "auth", "status"])
     except RuntimeError:
         print("run `gh auth login` to authenticate the GitHub CLI", file=sys.stderr)
-        raise RuntimeError("gh auth status failed; run `gh auth login` to authenticate the GitHub CLI") from None
+        raise RuntimeError(
+            "gh auth status failed; run `gh auth login` to authenticate the GitHub CLI"
+        ) from None
 
 
 def gh_pr_view_json(fields: str) -> dict[str, Any]:

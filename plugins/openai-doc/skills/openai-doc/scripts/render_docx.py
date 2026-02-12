@@ -2,13 +2,14 @@ import argparse
 import os
 import re
 import subprocess
+import sys
 import tempfile
 import xml.etree.ElementTree as ET
+from collections.abc import Sequence
 from os import makedirs, replace
 from os.path import abspath, basename, exists, expanduser, join, splitext
 from shutil import which
-import sys
-from typing import Sequence, cast
+from typing import cast
 from zipfile import ZipFile
 
 from pdf2image import convert_from_path, pdfinfo_from_path

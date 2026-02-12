@@ -12,8 +12,8 @@ import re
 import subprocess
 import sys
 from collections import Counter, defaultdict
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 
 def parse_args() -> argparse.Namespace:
@@ -130,7 +130,7 @@ def parse_date(value: str) -> dt.datetime:
     except ValueError:
         parsed = dt.datetime.fromisoformat(value + "T00:00:00")
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=dt.timezone.utc)
+        parsed = parsed.replace(tzinfo=dt.UTC)
     return parsed
 
 
@@ -147,16 +147,16 @@ def month_end(timestamp: dt.datetime) -> dt.datetime:
     year = timestamp.year
     month = timestamp.month
     if month == 12:
-        next_month = dt.datetime(year + 1, 1, 1, tzinfo=dt.timezone.utc)
+        next_month = dt.datetime(year + 1, 1, 1, tzinfo=dt.UTC)
     else:
-        next_month = dt.datetime(year, month + 1, 1, tzinfo=dt.timezone.utc)
+        next_month = dt.datetime(year, month + 1, 1, tzinfo=dt.UTC)
     return next_month - dt.timedelta(seconds=1)
 
 
 def quarter_start(timestamp: dt.datetime) -> dt.datetime:
     quarter = (timestamp.month - 1) // 3
     start_month = quarter * 3 + 1
-    return dt.datetime(timestamp.year, start_month, 1, tzinfo=dt.timezone.utc)
+    return dt.datetime(timestamp.year, start_month, 1, tzinfo=dt.UTC)
 
 
 def quarter_end(timestamp: dt.datetime) -> dt.datetime:
@@ -166,14 +166,14 @@ def quarter_end(timestamp: dt.datetime) -> dt.datetime:
     if end_month > 12:
         end_month -= 12
         end_year += 1
-    end_anchor = dt.datetime(end_year, end_month, 1, tzinfo=dt.timezone.utc)
+    end_anchor = dt.datetime(end_year, end_month, 1, tzinfo=dt.UTC)
     return month_end(end_anchor)
 
 
 def add_months(timestamp: dt.datetime, months: int) -> dt.datetime:
     year = timestamp.year + (timestamp.month - 1 + months) // 12
     month = (timestamp.month - 1 + months) % 12 + 1
-    return dt.datetime(year, month, 1, tzinfo=dt.timezone.utc)
+    return dt.datetime(year, month, 1, tzinfo=dt.UTC)
 
 
 def recency_weight(age_days: float, half_life_days: float) -> float:
@@ -269,14 +269,8 @@ def iter_commits_from_json(
             entry = json.loads(line)
             author_date = entry.get("author_date") or entry.get("date")
             committer_date = entry.get("committer_date")
-            if author_date:
-                author_dt = parse_date(author_date)
-            else:
-                author_dt = None
-            if committer_date:
-                committer_dt = parse_date(committer_date)
-            else:
-                committer_dt = None
+            author_dt = parse_date(author_date) if author_date else None
+            committer_dt = parse_date(committer_date) if committer_date else None
             if date_field == "committer":
                 commit_date = committer_dt or author_dt
             else:
@@ -453,8 +447,8 @@ def main() -> int:
         key_func = quarter_key
         end_func = quarter_end
     else:
-        period_cursor = dt.datetime(min_date.year, min_date.month, 1, tzinfo=dt.timezone.utc)
-        period_end_anchor = dt.datetime(max_date.year, max_date.month, 1, tzinfo=dt.timezone.utc)
+        period_cursor = dt.datetime(min_date.year, min_date.month, 1, tzinfo=dt.UTC)
+        period_end_anchor = dt.datetime(max_date.year, max_date.month, 1, tzinfo=dt.UTC)
         step_months = 1
         key_func = month_key
         end_func = month_end
@@ -521,10 +515,7 @@ def main() -> int:
             if rank > args.top:
                 break
             person = people.get(person_id, {})
-            if args.weight == "recency":
-                touches_value = f"{touches:.4f}"
-            else:
-                touches_value = f"{touches:.0f}"
+            touches_value = f"{touches:.4f}" if args.weight == "recency" else f"{touches:.0f}"
             writer.writerow(
                 [
                     period,

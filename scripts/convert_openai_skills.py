@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import contextlib
 import hashlib
 import json
 import re
@@ -522,7 +523,40 @@ def write_plugin(
     if license_text:
         (plugin_dir / "LICENSE").write_text(license_text)
 
+    lint_plugin(plugin_dir)
+
     return version
+
+
+def lint_plugin(plugin_dir: Path) -> None:
+    """Run ruff and shfmt on imported scripts to match CI standards."""
+    py_files = list(plugin_dir.rglob("*.py"))
+    sh_files = list(plugin_dir.rglob("*.sh"))
+
+    if py_files:
+        with contextlib.suppress(FileNotFoundError):
+            subprocess.run(
+                [
+                    "ruff",
+                    "check",
+                    "--fix",
+                    "--unsafe-fixes",
+                    "--silent",
+                    *py_files,
+                ],
+                capture_output=True,
+            )
+            subprocess.run(
+                ["ruff", "format", "--silent", *py_files],
+                capture_output=True,
+            )
+
+    if sh_files:
+        with contextlib.suppress(FileNotFoundError):
+            subprocess.run(
+                ["shfmt", "-i", "2", "-ci", "-w", *sh_files],
+                capture_output=True,
+            )
 
 
 def update_marketplace(

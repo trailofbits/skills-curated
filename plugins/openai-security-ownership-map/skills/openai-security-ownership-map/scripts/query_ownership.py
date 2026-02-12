@@ -8,8 +8,8 @@ import csv
 import json
 import sys
 from collections import defaultdict
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 
 def parse_args() -> argparse.Namespace:

@@ -14,8 +14,8 @@ import re
 import subprocess
 import sys
 from collections import defaultdict
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 DEFAULT_SENSITIVE_RULES: list[tuple[str, str, float]] = [
     ("**/auth/**", "auth", 1.0),
@@ -207,7 +207,7 @@ def load_sensitive_rules(path: str | None) -> list[tuple[str, str, float]]:
     if not path:
         return list(DEFAULT_SENSITIVE_RULES)
     rules: list[tuple[str, str, float]] = []
-    with open(path, "r", encoding="utf-8") as handle:
+    with open(path, encoding="utf-8") as handle:
         for raw in handle:
             line = raw.strip()
             if not line or line.startswith("#"):
@@ -225,7 +225,7 @@ def load_sensitive_rules(path: str | None) -> list[tuple[str, str, float]]:
 def parse_date(value: str) -> dt.datetime:
     parsed = dt.datetime.fromisoformat(value)
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=dt.timezone.utc)
+        parsed = parsed.replace(tzinfo=dt.UTC)
     return parsed
 
 
@@ -419,7 +419,7 @@ def write_csv(path: Path, header: list[str], rows: Iterable[list[str]]) -> None:
 
 
 def build_ownership_map(args: argparse.Namespace) -> Path:
-    now = dt.datetime.now(dt.timezone.utc)
+    now = dt.datetime.now(dt.UTC)
     rules = load_sensitive_rules(args.sensitive_config)
     out_dir = ensure_out_dir(args.out)
 

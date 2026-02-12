@@ -76,7 +76,9 @@ def default_output(repo_root: Path, title: str) -> Path:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Scaffold a Jupyter notebook for experiments or tutorials.")
+    parser = argparse.ArgumentParser(
+        description="Scaffold a Jupyter notebook for experiments or tutorials."
+    )
     parser.add_argument(
         "--kind",
         choices=["experiment", "tutorial"],

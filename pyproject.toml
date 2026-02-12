@@ -14,3 +14,6 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**/*.py" = ["F401", "SIM118"]
 "**/test_samples/**/*.py" = ["F", "E", "B"]
+# Imported third-party scripts from openai/skills — auto-fix what we can,
+# ignore the rest to avoid rewriting vendor code
+"plugins/openai-*/skills/*/scripts/**/*.py" = ["B023", "B904", "E501", "SIM105", "SIM117"]

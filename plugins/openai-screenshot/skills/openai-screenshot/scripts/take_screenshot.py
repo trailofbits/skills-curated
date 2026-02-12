@@ -150,9 +150,7 @@ def ensure_parent(path: Path) -> None:
         pass
 
 
-def resolve_output_path(
-    requested_path: str | None, mode: str, fmt: str, system: str
-) -> Path:
+def resolve_output_path(requested_path: str | None, mode: str, fmt: str, system: str) -> Path:
     if requested_path:
         path = Path(requested_path).expanduser()
         if path.exists() and path.is_dir():
@@ -397,13 +395,12 @@ def capture_linux(args: argparse.Namespace, output: Path) -> None:
             run(["gnome-screenshot", "-w", "-f", str(output)])
             return
         if imagemagick and xdotool:
-            win_id = (
-                subprocess.check_output(["xdotool", "getactivewindow"], text=True)
-                .strip()
-            )
+            win_id = subprocess.check_output(["xdotool", "getactivewindow"], text=True).strip()
             run(["import", "-window", win_id, str(output)])
             return
-        raise SystemExit("active-window capture requires scrot, gnome-screenshot, or import+xdotool")
+        raise SystemExit(
+            "active-window capture requires scrot, gnome-screenshot, or import+xdotool"
+        )
 
     if scrot:
         run(["scrot", str(output)])
@@ -555,7 +552,7 @@ def main() -> None:
         if window_ids:
             suffixes = [f"w{wid}" for wid in window_ids]
             paths = multi_output_paths(output, suffixes)
-            for wid, path in zip(window_ids, paths):
+            for wid, path in zip(window_ids, paths, strict=False):
                 capture_macos(args, path, window_id=wid)
             for path in paths:
                 print(path)
@@ -563,7 +560,7 @@ def main() -> None:
         if len(display_ids) > 1:
             suffixes = [f"d{did}" for did in display_ids]
             paths = multi_output_paths(output, suffixes)
-            for did, path in zip(display_ids, paths):
+            for did, path in zip(display_ids, paths, strict=False):
                 capture_macos(args, path, display=did)
             for path in paths:
                 print(path)
