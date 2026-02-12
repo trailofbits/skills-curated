@@ -26,8 +26,8 @@ dist/
 build/
 *.egg-info/
 
-# Local plugin cache
-.claude/
+# Local plugin cache (but track commands)
+.claude/*
 !.claude/commands/
 
 # MCP server config (contains API keys)
