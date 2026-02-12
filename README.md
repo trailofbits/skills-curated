@@ -29,6 +29,7 @@ Everything here has been code-reviewed by Trail of Bits staff. We're sharing it 
 | Plugin | Description |
 |--------|-------------|
 | [ffuf-web-fuzzing](plugins/ffuf-web-fuzzing/) | Expert guidance for ffuf web fuzzing during authorized penetration testing |
+| [ghidra-headless](plugins/ghidra-headless/) | Reverse engineer binaries using Ghidra's headless analyzer |
 | [wooyun-legacy](plugins/wooyun-legacy/) | Web vulnerability testing methodology from 88,636 real-world cases (WooYun 2010-2016) |
 
 ### Writing

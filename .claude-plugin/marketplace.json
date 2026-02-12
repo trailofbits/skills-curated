@@ -220,6 +220,16 @@
         "url": "https://github.com/openai/skills"
       },
       "source": "./plugins/openai-yeet"
+    },
+    {
+      "name": "ghidra-headless",
+      "version": "1.0.0",
+      "description": "Reverse engineer binaries using Ghidra's headless analyzer. Decompile executables, extract functions, strings, symbols, and analyze call graphs without GUI.",
+      "author": {
+        "name": "Armin Ronacher",
+        "url": "https://github.com/mitsuhiko/agent-stuff"
+      },
+      "source": "./plugins/ghidra-headless"
     }
   ]
 }
