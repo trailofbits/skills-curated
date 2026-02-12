@@ -88,7 +88,10 @@ Choose a name based on the source skill and its content:
 - Descriptive of what the skill does (not just the source name)
 - Check for conflicts: `ls plugins/` to see existing names
 
-**Ask the user to confirm the name** before proceeding.
+Choose the name autonomously. Prefer a descriptive name that reflects what the
+skill does. If the source name is already descriptive and kebab-case, keep it.
+Prefix with the platform if it helps disambiguate (e.g., `openai-` for OpenAI
+skills). Do not ask the user to confirm.
 
 ### Step 6: Determine author attribution
 
@@ -266,19 +269,12 @@ should be reviewed — if the network access or destructive command is
 legitimate for the skill's purpose, note it in the PR description under
 a "Security Notes" section.
 
-### Step 18: Quality self-review
+### Step 18: Deep review
 
-Read through the final SKILL.md and verify:
-
-- [ ] Description is third-person with specific trigger conditions
-- [ ] "When to Use" has concrete scenarios (not generic)
-- [ ] "When NOT to Use" has concrete scenarios
-- [ ] No leftover platform references (`$CODEX_HOME`, `$PI_HOME`, etc.)
-- [ ] Script paths in prose match actual file locations
-- [ ] Under 500 lines (or properly split into references)
-- [ ] No TODO stubs or placeholder text
-
-If any check fails, fix it before proceeding.
+Read `.claude/commands/review-plugin.md` and execute its full review process
+against `plugins/{name}/`. Fix all BLOCK and WARN findings. After fixing,
+re-run linters (Step 15) to confirm the fixes are clean. Save the review
+summary for inclusion in the PR body (Step 21).
 
 ### Step 19: Register in marketplace and README
 
@@ -367,6 +363,12 @@ Imported from [{owner}/{repo}]({source_url}).
 - Added "When to Use" / "When NOT to Use" sections
 - {any other changes}
 
+## Review Findings
+
+{Paste the review summary table from Step 18 here. If the review found no
+issues, write "Clean — no issues found." This gives human reviewers visibility
+into what the automated review caught and fixed.}
+
 ## Checklist
 
 - [x] Valid YAML frontmatter with `name` and `description`
@@ -378,6 +380,7 @@ Imported from [{owner}/{repo}]({source_url}).
 - [x] Plugin has README.md
 - [x] Added to root README.md table
 - [x] Registered in marketplace.json
+- [x] Deep review passed (all BLOCKs resolved)
 EOF
 )"
 ```
@@ -386,5 +389,6 @@ Report the PR URL to the user.
 
 ## Idempotency
 
-If `plugins/{name}/` already exists, tell the user and ask whether to
-**update** (overwrite, bump patch version) or **skip** (abort).
+If `plugins/{name}/` already exists, update it: overwrite files and bump the
+patch version in plugin.json and marketplace.json. Do not ask — proceed
+autonomously.
