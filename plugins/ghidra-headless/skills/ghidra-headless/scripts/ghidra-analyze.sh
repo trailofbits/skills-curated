@@ -177,7 +177,7 @@ for i in "${!SCRIPTS[@]}"; do
   CMD+=(-postScript "$script")
 
   # Check if there are args for this script
-  for arg_entry in "${SCRIPT_ARGS[@]}"; do
+  for arg_entry in ${SCRIPT_ARGS[@]+"${SCRIPT_ARGS[@]}"}; do
     idx="${arg_entry%%:*}"
     args="${arg_entry#*:}"
     if [[ "$idx" -eq $((i + 1)) ]]; then
