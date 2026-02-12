@@ -509,10 +509,7 @@ def main():
 
     # Mock mode can work without keys
     if args.mock:
-        if args.sources == "auto":
-            sources = "both"
-        else:
-            sources = args.sources
+        sources = "both" if args.sources == "auto" else args.sources
     else:
         # Validate requested sources against available
         sources, error = env.validate_sources(args.sources, available, args.include_web)

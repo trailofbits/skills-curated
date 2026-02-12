@@ -287,10 +287,7 @@ class ProgressDisplay:
         sys.stderr.flush()
 
     def show_cached(self, age_hours: float | None = None):
-        if age_hours is not None:
-            age_str = f" ({age_hours:.1f}h old)"
-        else:
-            age_str = ""
+        age_str = f" ({age_hours:.1f}h old)" if age_hours is not None else ""
         sys.stderr.write(
             f"{Colors.GREEN}⚡{Colors.RESET} "
             f"{Colors.DIM}Using cached results{age_str} "

@@ -1,5 +1,6 @@
 """HTTP utilities for last30days skill (stdlib only)."""
 
+import contextlib
 import json
 import os
 import sys
@@ -80,10 +81,8 @@ def request(
                 return json.loads(body) if body else {}
         except urllib.error.HTTPError as e:
             body = None
-            try:
+            with contextlib.suppress(Exception):
                 body = e.read().decode("utf-8")
-            except Exception:
-                pass
             log(f"HTTP Error {e.code}: {e.reason}")
             if body:
                 log(f"Error body: {body[:500]}")

@@ -40,11 +40,7 @@ def is_mainline_openai_model(model_id: str) -> bool:
 
     # Exclude variants
     excludes = ["mini", "nano", "chat", "codex", "pro", "preview", "turbo"]
-    for exc in excludes:
-        if exc in model_lower:
-            return False
-
-    return True
+    return all(exc not in model_lower for exc in excludes)
 
 
 def select_openai_model(

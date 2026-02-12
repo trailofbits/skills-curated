@@ -1,5 +1,6 @@
 """Caching utilities for last30days skill."""
 
+import contextlib
 import hashlib
 import json
 from datetime import UTC, datetime
@@ -104,10 +105,8 @@ def clear_cache():
     """Clear all cache files."""
     if CACHE_DIR.exists():
         for f in CACHE_DIR.glob("*.json"):
-            try:
+            with contextlib.suppress(OSError):
                 f.unlink()
-            except OSError:
-                pass
 
 
 # Model selection cache (longer TTL)

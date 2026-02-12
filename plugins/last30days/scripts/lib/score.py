@@ -126,10 +126,7 @@ def score_reddit_items(items: list[schema.RedditItem]) -> list[schema.RedditItem
         rec_score = dates.recency_score(item.date)
 
         # Engagement subscore
-        if eng_normalized[i] is not None:
-            eng_score = int(eng_normalized[i])
-        else:
-            eng_score = DEFAULT_ENGAGEMENT
+        eng_score = int(eng_normalized[i]) if eng_normalized[i] is not None else DEFAULT_ENGAGEMENT
 
         # Store subscores
         item.subs = schema.SubScores(
@@ -186,10 +183,7 @@ def score_x_items(items: list[schema.XItem]) -> list[schema.XItem]:
         rec_score = dates.recency_score(item.date)
 
         # Engagement subscore
-        if eng_normalized[i] is not None:
-            eng_score = int(eng_normalized[i])
-        else:
-            eng_score = DEFAULT_ENGAGEMENT
+        eng_score = int(eng_normalized[i]) if eng_normalized[i] is not None else DEFAULT_ENGAGEMENT
 
         # Store subscores
         item.subs = schema.SubScores(

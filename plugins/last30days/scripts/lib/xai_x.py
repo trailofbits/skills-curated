@@ -208,9 +208,8 @@ def parse_x_response(response: dict[str, Any]) -> list[dict[str, Any]]:
         }
 
         # Validate date format
-        if clean_item["date"]:
-            if not re.match(r"^\d{4}-\d{2}-\d{2}$", str(clean_item["date"])):
-                clean_item["date"] = None
+        if clean_item["date"] and not re.match(r"^\d{4}-\d{2}-\d{2}$", str(clean_item["date"])):
+            clean_item["date"] = None
 
         clean_items.append(clean_item)
 

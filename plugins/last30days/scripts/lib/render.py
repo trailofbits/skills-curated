@@ -127,9 +127,9 @@ def render_compact(report: schema.Report, limit: int = 15, missing_keys: str = "
             date_str = f" ({item.date})" if item.date else " (date unknown)"
             conf_str = f" [date:{item.date_confidence}]" if item.date_confidence != "high" else ""
 
-            lines.append(
-                f"**{item.id}** (score:{item.score}) r/{item.subreddit}{date_str}{conf_str}{eng_str}"
-            )
+            header = f"**{item.id}** (score:{item.score})"
+            meta = f"r/{item.subreddit}{date_str}{conf_str}{eng_str}"
+            lines.append(f"{header} {meta}")
             lines.append(f"  {item.title}")
             lines.append(f"  {item.url}")
             lines.append(f"  *{item.why_relevant}*")
@@ -171,9 +171,9 @@ def render_compact(report: schema.Report, limit: int = 15, missing_keys: str = "
             date_str = f" ({item.date})" if item.date else " (date unknown)"
             conf_str = f" [date:{item.date_confidence}]" if item.date_confidence != "high" else ""
 
-            lines.append(
-                f"**{item.id}** (score:{item.score}) @{item.author_handle}{date_str}{conf_str}{eng_str}"
-            )
+            header = f"**{item.id}** (score:{item.score})"
+            meta = f"@{item.author_handle}{date_str}{conf_str}{eng_str}"
+            lines.append(f"{header} {meta}")
             lines.append(f"  {item.text[:200]}...")
             lines.append(f"  {item.url}")
             lines.append(f"  *{item.why_relevant}*")

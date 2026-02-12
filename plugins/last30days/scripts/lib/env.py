@@ -136,12 +136,9 @@ def validate_sources(
     if requested == "auto":
         # Add web to sources if include_web is set
         if include_web:
-            if available == "both":
-                return "all", None  # reddit + x + web
-            elif available == "reddit":
-                return "reddit-web", None
-            elif available == "x":
-                return "x-web", None
+            web_map = {"both": "all", "reddit": "reddit-web", "x": "x-web"}
+            if available in web_map:
+                return web_map[available], None
         return available, None
 
     if requested == "web":
