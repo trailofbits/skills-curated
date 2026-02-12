@@ -5,9 +5,18 @@
 # ///
 """Deterministic security scanner for imported plugins.
 
-Scans plugin directories for external network access, unicode tricks,
-and destructive operations. Exit codes: 0 = clean, 1 = usage error,
-2 = BLOCK findings, 3 = WARN only.
+Scans plugin directories for:
+  1. Unicode tricks (bidi overrides, zero-width chars, homoglyphs)
+  2. Network access (URLs, curl/wget, Python/Node imports)
+  3. Destructive commands (rm -rf, git reset --hard, etc.)
+  4. Code execution (pipe-to-shell, eval/exec, subprocess)
+  5. Credential access (SSH keys, AWS config, etc.)
+  6. Encoded payloads (hex escapes, fromCharCode, atob/btoa)
+  7. Privilege escalation (sudo, setuid, chmod +s)
+  8. Compiled bytecode (.pyc, .pyo, __pycache__)
+
+Exit codes: 0 = clean, 1 = usage error, 2 = BLOCK findings,
+3 = WARN only.
 """
 
 from __future__ import annotations
@@ -93,6 +102,65 @@ DESTRUCTIVE_RE = re.compile(
     r"|\bmkfs\b"
     r"|\bformat\s+[A-Za-z]:"
 )
+
+# Pipe-to-shell — no legitimate plugin use
+PIPE_TO_SHELL_RE = re.compile(
+    r"\|\s*(?:bash|sh|zsh|dash|python[23]?|perl|ruby|node)\b"
+    r"|\b(?:bash|sh|zsh)\s+-c\s"
+    r"|\bsource\s+<\("
+    r'|\beval\s+"\$\('
+)
+
+# Eval/exec — legitimate in educational docs
+EVAL_EXEC_RE = re.compile(
+    r"\beval\s*\("
+    r"|\bexec\s*\("
+    r"|\bFunction\s*\("
+    r"|\b__import__\s*\("
+    r"|\bimportlib\.import_module\s*\("
+    r'|\bcompile\s*\([^)]*[\'"]exec[\'"]'
+)
+
+# Python shell-out — legitimate in helper scripts
+PY_SHELLOUT_RE = re.compile(
+    r"\bsubprocess\b"
+    r"|\bos\.system\s*\("
+    r"|\bos\.popen\s*\("
+    r"|\bos\.exec[lv]p?\s*\("
+)
+
+# Sensitive credential paths
+SENSITIVE_PATH_RE = re.compile(
+    r"~/\.ssh\b"
+    r"|~/\.aws\b"
+    r"|~/\.gnupg\b"
+    r"|~/\.config/gh\b"
+    r"|~/\.netrc\b"
+    r"|/etc/shadow\b"
+    r"|\bid_rsa\b"
+    r"|\bid_ed25519\b"
+)
+
+# Encoded / obfuscated payloads
+ENCODED_PAYLOAD_RE = re.compile(
+    r"(?:\\x[0-9a-fA-F]{2}){8,}"
+    r"|\bString\.fromCharCode\s*\("
+    r"|\bchr\s*\(\s*0x[0-9a-fA-F]"
+    r"|\batob\s*\("
+    r"|\bbtoa\s*\("
+)
+
+# Privilege escalation
+PRIVILEGE_RE = re.compile(
+    r"\bsudo\b"
+    r"|\bdoas\b"
+    r"|\bchown\s+root\b"
+    r"|\bsetuid\b"
+    r"|\bchmod\s+[ugo]*s"
+)
+
+# Compiled bytecode extensions
+BYTECODE_EXTENSIONS = frozenset({".pyc", ".pyo"})
 
 # Fenced code block detection in markdown
 FENCE_OPEN_RE = re.compile(r"^(`{3,}|~{3,})")
@@ -328,6 +396,105 @@ def check_destructive(
     return []
 
 
+def check_code_execution(
+    line: str,
+    line_idx: int,
+    rel_path: str,
+    suffix: str,
+    code_lines: frozenset[int] | None,
+) -> list[Finding]:
+    """Check a line for code execution patterns."""
+    if not _is_code_context(line_idx, suffix, code_lines):
+        return []
+
+    findings: list[Finding] = []
+    lineno = line_idx + 1
+    detail = line.strip()[:120]
+
+    if PIPE_TO_SHELL_RE.search(line):
+        findings.append(Finding("BLOCK", "pipe-to-shell", rel_path, lineno, detail))
+
+    if EVAL_EXEC_RE.search(line):
+        findings.append(Finding("WARN", "eval-exec", rel_path, lineno, detail))
+
+    if PY_SHELLOUT_RE.search(line):
+        findings.append(Finding("WARN", "py-shellout", rel_path, lineno, detail))
+
+    return findings
+
+
+def check_credential_access(
+    line: str,
+    line_idx: int,
+    rel_path: str,
+    suffix: str,
+    code_lines: frozenset[int] | None,
+) -> list[Finding]:
+    """Check a line for access to sensitive credential paths."""
+    if not _is_code_context(line_idx, suffix, code_lines):
+        return []
+
+    if SENSITIVE_PATH_RE.search(line):
+        return [
+            Finding(
+                "BLOCK",
+                "credential-access",
+                rel_path,
+                line_idx + 1,
+                line.strip()[:120],
+            )
+        ]
+    return []
+
+
+def check_obfuscation(
+    line: str,
+    line_idx: int,
+    rel_path: str,
+    suffix: str,
+    code_lines: frozenset[int] | None,
+) -> list[Finding]:
+    """Check a line for encoded or obfuscated payloads."""
+    if not _is_code_context(line_idx, suffix, code_lines):
+        return []
+
+    if ENCODED_PAYLOAD_RE.search(line):
+        return [
+            Finding(
+                "WARN",
+                "encoded-payload",
+                rel_path,
+                line_idx + 1,
+                line.strip()[:120],
+            )
+        ]
+    return []
+
+
+def check_privilege(
+    line: str,
+    line_idx: int,
+    rel_path: str,
+    suffix: str,
+    code_lines: frozenset[int] | None,
+) -> list[Finding]:
+    """Check a line for privilege escalation patterns."""
+    if not _is_code_context(line_idx, suffix, code_lines):
+        return []
+
+    if PRIVILEGE_RE.search(line):
+        return [
+            Finding(
+                "WARN",
+                "privilege-cmd",
+                rel_path,
+                line_idx + 1,
+                line.strip()[:120],
+            )
+        ]
+    return []
+
+
 # ---------------------------------------------------------------------------
 # File / plugin scanning
 # ---------------------------------------------------------------------------
@@ -338,12 +505,23 @@ def scan_file(path: Path, rel_path: str) -> list[Finding]:
     if path.name in SKIP_FILENAMES:
         return []
 
+    suffix = path.suffix.lower()
+    if suffix in BYTECODE_EXTENSIONS:
+        return [
+            Finding(
+                "BLOCK",
+                "compiled-bytecode",
+                rel_path,
+                0,
+                f"compiled Python bytecode ({suffix})",
+            )
+        ]
+
     text = _read_file_text(path)
     if text is None:
         return []
 
     lines = text.splitlines()
-    suffix = path.suffix.lower()
 
     code_lines: frozenset[int] | None = None
     if suffix == ".md":
@@ -355,6 +533,10 @@ def scan_file(path: Path, rel_path: str) -> list[Finding]:
             findings.extend(check_unicode(line, idx, rel_path, suffix, code_lines))
         findings.extend(check_network(line, idx, rel_path, suffix, code_lines))
         findings.extend(check_destructive(line, idx, rel_path, suffix, code_lines))
+        findings.extend(check_code_execution(line, idx, rel_path, suffix, code_lines))
+        findings.extend(check_credential_access(line, idx, rel_path, suffix, code_lines))
+        findings.extend(check_obfuscation(line, idx, rel_path, suffix, code_lines))
+        findings.extend(check_privilege(line, idx, rel_path, suffix, code_lines))
 
     return findings
 
@@ -362,12 +544,22 @@ def scan_file(path: Path, rel_path: str) -> list[Finding]:
 def scan_plugin(plugin_dir: Path) -> list[Finding]:
     """Scan all files in a plugin directory."""
     findings: list[Finding] = []
-    # Compute the plugins/ parent for relative path display
     plugins_dir = plugin_dir.parent
     for path in sorted(plugin_dir.rglob("*")):
+        rel = str(path.relative_to(plugins_dir))
+        if path.is_dir() and path.name == "__pycache__":
+            findings.append(
+                Finding(
+                    "BLOCK",
+                    "compiled-bytecode",
+                    rel,
+                    0,
+                    "__pycache__ directory (unreviable bytecode)",
+                )
+            )
+            continue
         if not path.is_file():
             continue
-        rel = str(path.relative_to(plugins_dir))
         findings.extend(scan_file(path, rel))
     return findings
 
