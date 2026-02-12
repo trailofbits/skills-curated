@@ -32,6 +32,12 @@ Everything here has been code-reviewed by Trail of Bits staff. We're sharing it 
 | [ghidra-headless](plugins/ghidra-headless/) | Reverse engineer binaries using Ghidra's headless analyzer |
 | [wooyun-legacy](plugins/wooyun-legacy/) | Web vulnerability testing methodology from 88,636 real-world cases (WooYun 2010-2016) |
 
+### Research
+
+| Plugin | Description |
+|--------|-------------|
+| [last30days](plugins/last30days/) | Research any topic from the last 30 days across Reddit, X, and the web |
+
 ### Writing
 
 | Plugin | Description |

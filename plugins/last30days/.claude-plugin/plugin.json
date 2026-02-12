@@ -1,0 +1,9 @@
+{
+  "name": "last30days",
+  "version": "1.0.0",
+  "description": "Researches any topic from the last 30 days across Reddit, X, and the web, surfacing real community discussions with engagement metrics",
+  "author": {
+    "name": "mvanhorn",
+    "url": "https://github.com/mvanhorn/last30days-skill"
+  }
+}
