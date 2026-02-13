@@ -1,0 +1,9 @@
+{
+  "name": "react-pdf",
+  "version": "1.0.0",
+  "description": "Generates PDF documents using React-PDF library (@react-pdf/renderer) with flexbox layout, SVG graphics, custom fonts, and professional typesetting.",
+  "author": {
+    "name": "molefrog",
+    "url": "https://github.com/molefrog/skills"
+  }
+}
