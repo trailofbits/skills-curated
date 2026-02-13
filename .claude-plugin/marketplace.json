@@ -250,6 +250,16 @@
         "url": "https://github.com/rohunvora/x-research-skill"
       },
       "source": "./plugins/x-research"
+    },
+    {
+      "name": "scv-scan",
+      "version": "1.0.0",
+      "description": "Audits Solidity codebases for smart contract vulnerabilities using a four-phase workflow covering 36 vulnerability classes.",
+      "author": {
+        "name": "kadenzipfel",
+        "url": "https://github.com/kadenzipfel/scv-scan"
+      },
+      "source": "./plugins/scv-scan"
     }
   ]
 }
