@@ -22,6 +22,7 @@ Everything here has been code-reviewed by Trail of Bits staff. We're sharing it 
 | Plugin | Description |
 |--------|-------------|
 | [planning-with-files](plugins/planning-with-files/) | File-based planning with persistent markdown for complex multi-step tasks |
+| [python-code-simplifier](plugins/python-code-simplifier/) | Simplify and refine Python code for clarity and maintainability |
 | [react-pdf](plugins/react-pdf/) | Generate PDF documents with React-PDF (flexbox layout, SVG, custom fonts) |
 | [skill-extractor](plugins/skill-extractor/) | Extract reusable skills from work sessions |
 

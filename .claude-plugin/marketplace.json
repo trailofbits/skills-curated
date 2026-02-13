@@ -270,6 +270,16 @@
         "url": "https://github.com/molefrog/skills"
       },
       "source": "./plugins/react-pdf"
+    },
+    {
+      "name": "python-code-simplifier",
+      "version": "1.0.0",
+      "description": "Simplifies and refines Python code for clarity, consistency, and maintainability while preserving all functionality.",
+      "author": {
+        "name": "Anthropic",
+        "url": "https://github.com/anthropics/claude-plugins-official"
+      },
+      "source": "./plugins/python-code-simplifier"
     }
   ]
 }
