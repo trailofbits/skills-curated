@@ -1,0 +1,9 @@
+{
+  "name": "repo-profiler",
+  "version": "1.0.0",
+  "description": "Analyzes a remote GitHub repository and generates Claude Code configuration files (CLAUDE.md, hooks, review skill) tailored to the codebase's patterns, tooling, and bug history.",
+  "author": {
+    "name": "Trail of Bits",
+    "url": "https://github.com/trailofbits/skills-curated"
+  }
+}
