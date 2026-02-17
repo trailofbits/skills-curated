@@ -280,6 +280,16 @@
         "url": "https://github.com/anthropics/claude-plugins-official"
       },
       "source": "./plugins/python-code-simplifier"
+    },
+    {
+      "name": "security-awareness",
+      "version": "1.0.0",
+      "description": "Teaches agents to recognize and avoid security threats during normal activity. Covers phishing detection, credential protection, domain verification, and social engineering defense.",
+      "author": {
+        "name": "1Password",
+        "url": "https://github.com/1Password/SCAM"
+      },
+      "source": "./plugins/security-awareness"
     }
   ]
 }

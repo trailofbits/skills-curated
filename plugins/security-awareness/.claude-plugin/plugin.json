@@ -1,0 +1,9 @@
+{
+  "name": "security-awareness",
+  "version": "1.0.0",
+  "description": "Teaches agents to recognize and avoid security threats during normal activity. Covers phishing detection, credential protection, domain verification, and social engineering defense. Use when building or operating agents that access email, credential vaults, web browsers, or sensitive data.",
+  "author": {
+    "name": "1Password",
+    "url": "https://github.com/1Password/SCAM"
+  }
+}
