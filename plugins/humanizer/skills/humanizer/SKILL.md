@@ -1,7 +1,10 @@
 ---
 name: humanizer
-description: |
-  Identifies and removes AI writing patterns from text. Use when editing drafts, reviewing content, or rewriting text that sounds artificial. Detects inflated symbolism, promotional language, vague attributions, AI vocabulary, and structural patterns like rule-of-three overuse.
+description: >-
+  Identifies and removes AI writing patterns from text. Use when editing drafts,
+  reviewing content, or rewriting text that sounds artificial. Detects inflated
+  symbolism, promotional language, vague attributions, AI vocabulary, and
+  structural patterns like rule-of-three overuse.
 allowed-tools:
   - Read
   - Write

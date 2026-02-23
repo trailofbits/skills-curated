@@ -1,7 +1,11 @@
 ---
 name: ffuf-web-fuzzing
-description: |
-  Expert guidance for ffuf web fuzzing during authorized penetration testing. Covers directory discovery, subdomain enumeration, parameter fuzzing, authenticated fuzzing with raw requests, auto-calibration, and result analysis. Use when running ffuf scans, analyzing ffuf output, or building fuzzing strategies for web targets.
+description: >-
+  Expert guidance for ffuf web fuzzing during authorized penetration testing.
+  Covers directory discovery, subdomain enumeration, parameter fuzzing,
+  authenticated fuzzing with raw requests, auto-calibration, and result
+  analysis. Use when running ffuf scans, analyzing ffuf output, or building
+  fuzzing strategies for web targets.
 allowed-tools:
   - Bash
   - Read

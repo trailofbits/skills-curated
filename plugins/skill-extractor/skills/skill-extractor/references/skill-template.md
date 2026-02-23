@@ -5,7 +5,7 @@ Copy this template when generating a new skill.
 ```markdown
 ---
 name: [kebab-case-name]
-description: |
+description: >-
   [Third-person description with specific triggers. Example: "Detects infinite
   recursion vulnerabilities in AST visitors from cyclic data structures. Use
   when: (1) RecursionError during tree traversal, (2) analyzing untrusted
