@@ -1,10 +1,9 @@
 {
   "name": "humanizer",
-  "version": "1.0.0",
-  "description": "Identifies and removes AI writing patterns to make text sound natural and human-written",
+  "version": "2.2.0",
+  "description": "Remove signs of AI-generated writing from text to make it sound natural and human-written",
   "author": {
-    "name": "Trail of Bits",
-    "email": "opensource@trailofbits.com",
-    "url": "https://github.com/trailofbits"
+    "name": "blader",
+    "url": "https://github.com/blader/humanizer"
   }
 }

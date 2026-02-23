@@ -1,6 +1,6 @@
 # Humanizer
 
-Identifies and removes AI writing patterns to make text sound natural and human-written.
+Remove signs of AI-generated writing from text to make it sound natural and human-written.
 
 ## Installation
 
@@ -16,6 +16,8 @@ The skill activates when editing text that sounds artificial. It detects 24 patt
 - **Language patterns** - AI vocabulary words, copula avoidance, rule of three
 - **Style patterns** - Em dash overuse, inline-header lists, decorative emojis
 - **Communication artifacts** - Chatbot phrases, sycophantic tone
+
+The skill includes a two-pass workflow: first rewriting to remove AI patterns, then a self-audit pass ("What makes the below so obviously AI generated?") to catch remaining tells.
 
 ## Example
 
@@ -35,4 +37,4 @@ Based on [Wikipedia:Signs of AI writing](https://en.wikipedia.org/wiki/Wikipedia
 
 ## Credits
 
-Original skill by [blader/humanizer](https://github.com/blader/humanizer). Restructured for the Trail of Bits skills repository.
+Original skill by [blader/humanizer](https://github.com/blader/humanizer). Restructured for the curated skills marketplace.

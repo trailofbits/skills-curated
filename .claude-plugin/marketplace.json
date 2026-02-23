@@ -11,12 +11,11 @@
   "plugins": [
     {
       "name": "humanizer",
-      "version": "1.0.0",
-      "description": "Identifies and removes AI writing patterns to make text sound natural and human-written",
+      "version": "2.2.0",
+      "description": "Remove signs of AI-generated writing from text. Detects and fixes inflated symbolism, promotional language, superficial -ing analyses, vague attributions, em dash overuse, rule of three, AI vocabulary words, negative parallelisms, and excessive conjunctive phrases.",
       "author": {
-        "name": "Trail of Bits",
-        "email": "opensource@trailofbits.com",
-        "url": "https://github.com/trailofbits"
+        "name": "blader",
+        "url": "https://github.com/blader/humanizer"
       },
       "source": "./plugins/humanizer"
     },
