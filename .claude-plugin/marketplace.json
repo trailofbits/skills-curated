@@ -289,6 +289,17 @@
         "url": "https://github.com/1Password/SCAM"
       },
       "source": "./plugins/security-awareness"
+    },
+    {
+      "name": "verifying-agent-receipts",
+      "version": "1.0.0",
+      "description": "Teaches agents to verify cryptographically signed decision receipts produced by agent governance tooling. Covers Ed25519 signature verification, hash-chain integrity, tamper diagnosis, and offline verification via @veritasacta/verify. Use when auditing agent actions, responding to compliance requests, or diagnosing integrity failures in signed audit logs.",
+      "author": {
+        "name": "Tom Farley",
+        "email": "tommy@scopeblind.com",
+        "url": "https://github.com/ScopeBlind/scopeblind-gateway"
+      },
+      "source": "./plugins/verifying-agent-receipts"
     }
   ]
 }

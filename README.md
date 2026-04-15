@@ -34,6 +34,7 @@ Everything here has been code-reviewed by Trail of Bits staff. We're sharing it 
 | [ghidra-headless](plugins/ghidra-headless/) | Reverse engineer binaries using Ghidra's headless analyzer |
 | [scv-scan](plugins/scv-scan/) | Audit Solidity codebases for 36 smart contract vulnerability classes |
 | [security-awareness](plugins/security-awareness/) | Recognize and avoid phishing, credential theft, and social engineering during agent operation |
+| [verifying-agent-receipts](plugins/verifying-agent-receipts/) | Verify Ed25519-signed decision receipts and hash-chained audit trails from agent governance tooling |
 | [wooyun-legacy](plugins/wooyun-legacy/) | Web vulnerability testing methodology from 88,636 real-world cases (WooYun 2010-2016) |
 
 ### Research
