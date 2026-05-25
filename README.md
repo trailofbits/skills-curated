@@ -49,6 +49,12 @@ Everything here has been code-reviewed by Trail of Bits staff. We're sharing it 
 |--------|-------------|
 | [humanizer](plugins/humanizer/) | Identifies and removes AI writing patterns to make text sound natural |
 
+### Social Media
+
+| Plugin | Description |
+|--------|-------------|
+| [socialclaw](plugins/socialclaw/) | Schedule and publish to X, LinkedIn, Instagram, Facebook, TikTok, YouTube, Reddit, WordPress, Pinterest via SocialClaw |
+
 ### OpenAI (Converted)
 
 Auto-converted from [openai/skills](https://github.com/openai/skills) using `scripts/convert_openai_skills.py`. Portable skills only (no MCP or OpenAI API dependencies).

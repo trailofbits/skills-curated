@@ -1,0 +1,9 @@
+{
+  "name": "socialclaw",
+  "version": "1.0.0",
+  "description": "Schedule and publish social media posts across X, LinkedIn, Instagram, Facebook, TikTok, YouTube, Reddit, WordPress, and Pinterest via SocialClaw",
+  "author": {
+    "name": "ndesv21",
+    "url": "https://github.com/ndesv21/socialclaw"
+  }
+}
