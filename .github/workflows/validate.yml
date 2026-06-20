@@ -56,6 +56,16 @@ jobs:
               plugin_json = os.path.join(path, '.claude-plugin', 'plugin.json')
               if not os.path.isfile(plugin_json):
                   errors.append(f'Plugin {name}: missing {plugin_json}')
+              else:
+                  with open(plugin_json) as f:
+                      plugin_metadata = json.load(f)
+                  marketplace_version = plugin.get('version')
+                  plugin_version = plugin_metadata.get('version')
+                  if marketplace_version != plugin_version:
+                      errors.append(
+                          f'Plugin {name}: marketplace version {marketplace_version!r} '
+                          f'does not match plugin.json version {plugin_version!r}'
+                      )
 
           if errors:
               for e in errors:
