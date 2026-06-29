@@ -1,0 +1,8 @@
+{
+  "name": "hermes-tweet",
+  "version": "0.1.6",
+  "description": "Use Hermes Agent for X/Twitter workflows with read-first tool selection and approval-gated actions.",
+  "author": {
+    "name": "Xquik"
+  }
+}
