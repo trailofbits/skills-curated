@@ -34,6 +34,7 @@ Everything here has been code-reviewed by Trail of Bits staff. We're sharing it 
 | [ghidra-headless](plugins/ghidra-headless/) | Reverse engineer binaries using Ghidra's headless analyzer |
 | [scv-scan](plugins/scv-scan/) | Audit Solidity codebases for 36 smart contract vulnerability classes |
 | [security-awareness](plugins/security-awareness/) | Recognize and avoid phishing, credential theft, and social engineering during agent operation |
+| [agent-safety-preflight](plugins/agent-safety-preflight/) | Preflight AI coding-agent runs before granting repository, shell, package-script, MCP, deployment, or credential-adjacent scope |
 | [wooyun-legacy](plugins/wooyun-legacy/) | Web vulnerability testing methodology from 88,636 real-world cases (WooYun 2010-2016) |
 
 ### Research

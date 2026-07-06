@@ -289,6 +289,16 @@
         "url": "https://github.com/1Password/SCAM"
       },
       "source": "./plugins/security-awareness"
+    },
+    {
+      "name": "agent-safety-preflight",
+      "version": "1.0.0",
+      "description": "Preflights AI coding-agent runs before granting repository, shell, package-script, MCP, deployment, or credential-adjacent scope.",
+      "author": {
+        "name": "Agent Safety Preflight contributors",
+        "url": "https://github.com/el-zachariah/ai-agent-safety-starter-pack"
+      },
+      "source": "./plugins/agent-safety-preflight"
     }
   ]
 }
