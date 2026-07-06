@@ -1,0 +1,9 @@
+{
+  "name": "agent-safety-preflight",
+  "version": "1.0.0",
+  "description": "Preflight AI coding-agent runs before granting repository, shell, package-script, MCP, deployment, or credential-adjacent scope",
+  "author": {
+    "name": "Agent Safety Preflight contributors",
+    "url": "https://github.com/el-zachariah/ai-agent-safety-starter-pack"
+  }
+}
