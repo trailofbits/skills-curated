@@ -36,6 +36,12 @@ Everything here has been code-reviewed by Trail of Bits staff. We're sharing it 
 | [security-awareness](plugins/security-awareness/) | Recognize and avoid phishing, credential theft, and social engineering during agent operation |
 | [wooyun-legacy](plugins/wooyun-legacy/) | Web vulnerability testing methodology from 88,636 real-world cases (WooYun 2010-2016) |
 
+### Productivity
+
+| Plugin | Description |
+|--------|-------------|
+| [productivity](plugins/productivity/) | Plan-grilling interviews, conversation handoffs, multi-session teaching workspaces, and skill-writing guidance |
+
 ### Research
 
 | Plugin | Description |
