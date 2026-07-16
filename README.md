@@ -47,6 +47,7 @@ Everything here has been code-reviewed by Trail of Bits staff. We're sharing it 
 | Plugin | Description |
 |--------|-------------|
 | [last30days](plugins/last30days/) | Research any topic from the last 30 days across Reddit, X, and the web |
+| [hermes-tweet](plugins/hermes-tweet/) | Use Hermes Agent for X/Twitter workflows with read-first tool selection and approval-gated actions |
 | [x-research](plugins/x-research/) | Search X/Twitter for real-time perspectives, discussions, and expert opinions |
 
 ### Writing

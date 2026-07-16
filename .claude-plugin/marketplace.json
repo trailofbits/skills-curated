@@ -251,6 +251,16 @@
       "source": "./plugins/x-research"
     },
     {
+      "name": "hermes-tweet",
+      "version": "0.1.6",
+      "description": "Use Hermes Agent for X/Twitter workflows with read-first tool selection and approval-gated actions.",
+      "author": {
+        "name": "Xquik",
+        "url": "https://github.com/Xquik-dev"
+      },
+      "source": "./plugins/hermes-tweet"
+    },
+    {
       "name": "scv-scan",
       "version": "1.0.0",
       "description": "Audits Solidity codebases for smart contract vulnerabilities using a four-phase workflow covering 36 vulnerability classes.",
