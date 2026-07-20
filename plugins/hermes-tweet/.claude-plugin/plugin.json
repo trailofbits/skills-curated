@@ -1,0 +1,8 @@
+{
+  "name": "hermes-tweet",
+  "version": "0.1.8",
+  "description": "Guides Hermes Agent sessions that use Hermes Tweet for X/Twitter search, account reads, monitored workflows, and approval-gated account actions.",
+  "author": {
+    "name": "Xquik"
+  }
+}

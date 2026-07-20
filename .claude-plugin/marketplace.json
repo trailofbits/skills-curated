@@ -251,6 +251,16 @@
       "source": "./plugins/x-research"
     },
     {
+      "name": "hermes-tweet",
+      "version": "0.1.8",
+      "description": "Guides Hermes Agent sessions that use Hermes Tweet for X/Twitter search, account reads, monitored workflows, and approval-gated account actions.",
+      "author": {
+        "name": "Xquik",
+        "url": "https://github.com/Xquik-dev/hermes-tweet"
+      },
+      "source": "./plugins/hermes-tweet"
+    },
+    {
       "name": "scv-scan",
       "version": "1.0.0",
       "description": "Audits Solidity codebases for smart contract vulnerabilities using a four-phase workflow covering 36 vulnerability classes.",

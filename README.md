@@ -48,6 +48,7 @@ Everything here has been code-reviewed by Trail of Bits staff. We're sharing it 
 |--------|-------------|
 | [last30days](plugins/last30days/) | Research any topic from the last 30 days across Reddit, X, and the web |
 | [x-research](plugins/x-research/) | Search X/Twitter for real-time perspectives, discussions, and expert opinions |
+| [hermes-tweet](plugins/hermes-tweet/) | Guide Hermes Agent X/Twitter workflows with read-first discovery and approval-gated actions |
 
 ### Writing
 
@@ -105,7 +106,7 @@ Found a marketplace not on the list? [Open an issue](https://github.com/trailofb
 
 ### 3. Submit an individual skill
 
-Using a skill from an unapproved source? Open a PR to add it here. See [CLAUDE.md](CLAUDE.md) for authoring guidelines. Every PR gets code review — we read every line of hooks and scripts.
+Using a skill from an unapproved source? Open a PR to add it here. See [CLAUDE.md](CLAUDE.md) for authoring guidelines. Every PR gets code review - we read every line of hooks and scripts.
 
 When submitting an external skill, include attribution in the plugin's README: where it came from (link to the original repo or author) and any modifications you made. See the [humanizer README](plugins/humanizer/README.md) for an example.
 
