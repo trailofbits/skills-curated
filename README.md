@@ -98,6 +98,7 @@ The marketplaces below have been reviewed and are approved for use. Install plug
 | [coreyhaines31/marketingskills](https://github.com/coreyhaines31/marketingskills) | Marketing-focused skills |
 | [ghostsecurity/skills](https://github.com/ghostsecurity/skills) | Ghost Security skills for application security testing |
 | [openai/skills](https://github.com/openai/skills) | OpenAI's official skills catalog for Codex |
+| [agentrhq/authsome](https://github.com/agentrhq/authsome) | Local credential broker for AI agents · OAuth2 and API key vault with local HTTPS proxy injection, 45 providers bundled |
 
 ### 2. Request approval of a new marketplace
 
