@@ -48,21 +48,22 @@ def get_config() -> dict[str, Any]:
     # Load from config file first (if configured)
     file_env = load_env_file(CONFIG_FILE) if CONFIG_FILE else {}
 
-    # Environment variables override file
-    config = {
-        "OPENAI_API_KEY": (os.environ.get("OPENAI_API_KEY") or file_env.get("OPENAI_API_KEY")),
-        "XAI_API_KEY": (os.environ.get("XAI_API_KEY") or file_env.get("XAI_API_KEY")),
-        "OPENAI_MODEL_POLICY": (
-            os.environ.get("OPENAI_MODEL_POLICY") or file_env.get("OPENAI_MODEL_POLICY", "auto")
-        ),
-        "OPENAI_MODEL_PIN": (
-            os.environ.get("OPENAI_MODEL_PIN") or file_env.get("OPENAI_MODEL_PIN")
-        ),
-        "XAI_MODEL_POLICY": (
-            os.environ.get("XAI_MODEL_POLICY") or file_env.get("XAI_MODEL_POLICY", "latest")
-        ),
-        "XAI_MODEL_PIN": (os.environ.get("XAI_MODEL_PIN") or file_env.get("XAI_MODEL_PIN")),
-    }
+    # Build config: process.env > .env file
+    keys = [
+        ("OPENAI_API_KEY", None),
+        ("XAI_API_KEY", None),
+        ("OPENROUTER_API_KEY", None),
+        ("PARALLEL_API_KEY", None),
+        ("BRAVE_API_KEY", None),
+        ("OPENAI_MODEL_POLICY", "auto"),
+        ("OPENAI_MODEL_PIN", None),
+        ("XAI_MODEL_POLICY", "latest"),
+        ("XAI_MODEL_PIN", None),
+    ]
+
+    config = {}
+    for key, default in keys:
+        config[key] = os.environ.get(key) or file_env.get(key, default)
 
     return config
 
@@ -75,43 +76,72 @@ def config_exists() -> bool:
 def get_available_sources(config: dict[str, Any]) -> str:
     """Determine which sources are available based on API keys.
 
-    Returns: 'both', 'reddit', 'x', or 'web' (fallback when no keys)
+    Returns: 'all', 'both', 'reddit', 'reddit-web', 'x', 'x-web', 'web', or 'none'
     """
     has_openai = bool(config.get("OPENAI_API_KEY"))
     has_xai = bool(config.get("XAI_API_KEY"))
+    has_web = has_web_search_keys(config)
 
     if has_openai and has_xai:
-        return "both"
+        return "all" if has_web else "both"
     elif has_openai:
-        return "reddit"
+        return "reddit-web" if has_web else "reddit"
     elif has_xai:
-        return "x"
+        return "x-web" if has_web else "x"
+    elif has_web:
+        return "web"
     else:
-        return "web"  # Fallback: WebSearch only (no API keys needed)
+        return "web"  # Fallback: assistant WebSearch (no API keys needed)
+
+
+def has_web_search_keys(config: dict[str, Any]) -> bool:
+    """Check if any web search API keys are configured."""
+    return bool(
+        config.get("OPENROUTER_API_KEY")
+        or config.get("PARALLEL_API_KEY")
+        or config.get("BRAVE_API_KEY")
+    )
+
+
+def get_web_search_source(config: dict[str, Any]) -> str | None:
+    """Determine the best available web search backend.
+
+    Priority: Parallel AI > Brave > OpenRouter/Sonar Pro
+
+    Returns: 'parallel', 'brave', 'openrouter', or None
+    """
+    if config.get("PARALLEL_API_KEY"):
+        return "parallel"
+    if config.get("BRAVE_API_KEY"):
+        return "brave"
+    if config.get("OPENROUTER_API_KEY"):
+        return "openrouter"
+    return None
 
 
 def get_missing_keys(config: dict[str, Any]) -> str:
-    """Determine which API keys are missing.
+    """Determine which sources are missing.
 
-    Returns: 'both', 'reddit', 'x', or 'none'
+    Returns: 'all', 'both', 'reddit', 'x', 'web', or 'none'
     """
     has_openai = bool(config.get("OPENAI_API_KEY"))
     has_xai = bool(config.get("XAI_API_KEY"))
+    has_web = has_web_search_keys(config)
 
-    if has_openai and has_xai:
+    if has_openai and has_xai and has_web:
         return "none"
+    elif has_openai and has_xai:
+        return "web"  # Missing web search keys
     elif has_openai:
-        return "x"
+        return "x"  # Missing X source (and possibly web)
     elif has_xai:
-        return "reddit"
+        return "reddit"  # Missing OpenAI key (and possibly web)
     else:
-        return "both"
+        return "all"  # Missing everything
 
 
 def validate_sources(
-    requested: str,
-    available: str,
-    include_web: bool = False,
+    requested: str, available: str, include_web: bool = False
 ) -> tuple[str, str | None]:
     """Validate requested sources against available keys.
 
@@ -123,22 +153,42 @@ def validate_sources(
     Returns:
         Tuple of (effective_sources, error_message)
     """
-    # WebSearch-only mode (no API keys)
+    # No API keys at all
+    if available == "none":
+        if requested == "auto":
+            return (
+                "web",
+                "No API keys configured. The assistant can still search"
+                " the web if it has a search tool.",
+            )
+        elif requested == "web":
+            return "web", None
+        else:
+            return (
+                "web",
+                "No API keys configured. Add keys to ~/.config/last30days/.env for Reddit/X.",
+            )
+
+    # Web-only mode (only web search API keys)
     if available == "web":
         if requested == "auto" or requested == "web":
             return "web", None
         else:
-            return "web", (
-                "No API keys configured. Using WebSearch fallback. "
-                "Add keys to ~/.config/last30days/.env for Reddit/X."
+            return (
+                "web",
+                "Only web search keys configured."
+                " Add OPENAI_API_KEY for Reddit, XAI_API_KEY for X.",
             )
 
     if requested == "auto":
         # Add web to sources if include_web is set
         if include_web:
-            web_map = {"both": "all", "reddit": "reddit-web", "x": "x-web"}
-            if available in web_map:
-                return web_map[available], None
+            if available == "both":  # noqa: SIM116
+                return "all", None  # reddit + x + web
+            elif available == "reddit":
+                return "reddit-web", None
+            elif available == "x":
+                return "x-web", None
         return available, None
 
     if requested == "web":
@@ -147,9 +197,10 @@ def validate_sources(
     if requested == "both":
         if available not in ("both",):
             missing = "xAI" if available == "reddit" else "OpenAI"
-            return "none", (
-                f"Requested both sources but {missing} key is missing. "
-                "Use --sources=auto to use available keys."
+            return (
+                "none",
+                f"Requested both sources but {missing} key is missing."
+                " Use --sources=auto to use available keys.",
             )
         if include_web:
             return "all", None
@@ -157,16 +208,53 @@ def validate_sources(
 
     if requested == "reddit":
         if available == "x":
-            return "none", ("Requested Reddit but only xAI key is available.")
+            return "none", "Requested Reddit but only xAI key is available."
         if include_web:
             return "reddit-web", None
         return "reddit", None
 
     if requested == "x":
         if available == "reddit":
-            return "none", ("Requested X but only OpenAI key is available.")
+            return "none", "Requested X but only OpenAI key is available."
         if include_web:
             return "x-web", None
         return "x", None
 
     return requested, None
+
+
+def get_x_source(config: dict[str, Any]) -> str | None:
+    """Determine the available X/Twitter source.
+
+    Args:
+        config: Configuration dict from get_config()
+
+    Returns:
+        'xai' if XAI_API_KEY is configured,
+        None if no X source available.
+    """
+    if config.get("XAI_API_KEY"):
+        return "xai"
+
+    return None
+
+
+def is_ytdlp_available() -> bool:
+    """Check if yt-dlp is installed for YouTube search."""
+    from . import youtube_yt
+
+    return youtube_yt.is_ytdlp_installed()
+
+
+def get_x_source_status(config: dict[str, Any]) -> dict[str, Any]:
+    """Get X source status for UI decisions.
+
+    Returns:
+        Dict with keys: source, xai_available
+    """
+    xai_available = bool(config.get("XAI_API_KEY"))
+
+    return {
+        "source": "xai" if xai_available else None,
+        "xai_available": xai_available,
+    }

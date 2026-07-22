@@ -3,17 +3,31 @@
 import contextlib
 import hashlib
 import json
+import os
+import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 
 CACHE_DIR = Path.home() / ".cache" / "last30days"
 DEFAULT_TTL_HOURS = 24
 MODEL_CACHE_TTL_DAYS = 7
+MODEL_CACHE_FILE = CACHE_DIR / "model_selection.json"
 
 
 def ensure_cache_dir():
-    """Ensure cache directory exists."""
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    """Ensure cache directory exists. Supports env override and sandbox fallback."""
+    global CACHE_DIR, MODEL_CACHE_FILE
+    env_dir = os.environ.get("LAST30DAYS_CACHE_DIR")
+    if env_dir:
+        CACHE_DIR = Path(env_dir)
+        MODEL_CACHE_FILE = CACHE_DIR / "model_selection.json"
+
+    try:
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    except PermissionError:
+        CACHE_DIR = Path(tempfile.gettempdir()) / "last30days" / "cache"
+        MODEL_CACHE_FILE = CACHE_DIR / "model_selection.json"
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def get_cache_key(topic: str, from_date: str, to_date: str, sources: str) -> str:
@@ -109,8 +123,8 @@ def clear_cache():
                 f.unlink()
 
 
-# Model selection cache (longer TTL)
-MODEL_CACHE_FILE = CACHE_DIR / "model_selection.json"
+# Model selection cache (longer TTL) — MODEL_CACHE_FILE is set at module level
+# and updated by ensure_cache_dir() if env override or fallback is needed.
 
 
 def load_model_cache() -> dict:

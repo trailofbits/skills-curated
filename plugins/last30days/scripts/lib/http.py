@@ -22,7 +22,7 @@ def log(msg: str):
 
 MAX_RETRIES = 3
 RETRY_DELAY = 1.0
-USER_AGENT = "last30days-skill/2.0 (Claude Code Skill)"
+USER_AGENT = "last30days-skill/2.1 (Assistant Skill)"
 
 
 class HTTPError(Exception):
@@ -81,7 +81,7 @@ def request(
                 return json.loads(body) if body else {}
         except urllib.error.HTTPError as e:
             body = None
-            with contextlib.suppress(Exception):
+            with contextlib.suppress(BaseException):
                 body = e.read().decode("utf-8")
             log(f"HTTP Error {e.code}: {e.reason}")
             if body:
@@ -127,11 +127,15 @@ def post(
     return request("POST", url, headers=headers, json_data=json_data, **kwargs)
 
 
-def get_reddit_json(path: str) -> dict[str, Any]:
+def get_reddit_json(
+    path: str, timeout: int = DEFAULT_TIMEOUT, retries: int = MAX_RETRIES
+) -> dict[str, Any]:
     """Fetch Reddit thread JSON.
 
     Args:
         path: Reddit path (e.g., /r/subreddit/comments/id/title)
+        timeout: HTTP timeout per attempt in seconds
+        retries: Number of retries on failure
 
     Returns:
         Parsed JSON response
@@ -152,4 +156,4 @@ def get_reddit_json(path: str) -> dict[str, Any]:
         "Accept": "application/json",
     }
 
-    return get(url, headers=headers)
+    return get(url, headers=headers, timeout=timeout, retries=retries)

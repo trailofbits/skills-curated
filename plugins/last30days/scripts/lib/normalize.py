@@ -4,7 +4,7 @@ from typing import Any, TypeVar
 
 from . import dates, schema
 
-T = TypeVar("T", schema.RedditItem, schema.XItem, schema.WebSearchItem)
+T = TypeVar("T", schema.RedditItem, schema.XItem, schema.WebSearchItem, schema.YouTubeItem)
 
 
 def filter_by_date_range(
@@ -154,6 +154,53 @@ def normalize_x_items(
                 date_confidence=date_confidence,
                 engagement=engagement,
                 relevance=item.get("relevance", 0.5),
+                why_relevant=item.get("why_relevant", ""),
+            )
+        )
+
+    return normalized
+
+
+def normalize_youtube_items(
+    items: list[dict[str, Any]],
+    from_date: str,
+    to_date: str,
+) -> list[schema.YouTubeItem]:
+    """Normalize raw YouTube items to schema.
+
+    Args:
+        items: Raw YouTube items from yt-dlp
+        from_date: Start of date range
+        to_date: End of date range
+
+    Returns:
+        List of YouTubeItem objects
+    """
+    normalized = []
+
+    for item in items:
+        # Parse engagement
+        eng_raw = item.get("engagement") or {}
+        engagement = schema.Engagement(
+            views=eng_raw.get("views"),
+            likes=eng_raw.get("likes"),
+            num_comments=eng_raw.get("comments"),
+        )
+
+        # YouTube dates are reliable (always YYYY-MM-DD from yt-dlp)
+        date_str = item.get("date")
+
+        normalized.append(
+            schema.YouTubeItem(
+                id=item.get("video_id", ""),
+                title=item.get("title", ""),
+                url=item.get("url", ""),
+                channel_name=item.get("channel_name", ""),
+                date=date_str,
+                date_confidence="high",
+                engagement=engagement,
+                transcript_snippet=item.get("transcript_snippet", ""),
+                relevance=item.get("relevance", 0.7),
                 why_relevant=item.get("why_relevant", ""),
             )
         )

@@ -1,6 +1,6 @@
 ---
 name: last30days
-description: "Researches a topic from the last 30 days on Reddit, X, and the web. Surfaces real community discussions with engagement metrics and synthesizes findings into actionable insights. Use when the user wants to know what people are saying about a topic right now."
+description: "Researches a topic from the last 30 days on Reddit, X, YouTube, and the web. Surfaces real community discussions with engagement metrics and synthesizes findings into actionable insights. Use when the user wants to know what people are saying about a topic right now."
 argument-hint: 'nano banana pro prompts, NVIDIA news, best AI video tools'
 allowed-tools:
   - Bash
@@ -13,7 +13,7 @@ allowed-tools:
 
 # last30days: Research Any Topic from the Last 30 Days
 
-Research ANY topic across Reddit, X, and the web. Surface what people are actually discussing, recommending, and debating right now.
+Research ANY topic across Reddit, X, YouTube, and the web. Surface what people are actually discussing, recommending, and debating right now.
 
 ## When to Use
 
@@ -60,7 +60,7 @@ Common patterns:
 **DISPLAY your parsing to the user.** Before running any tools, output:
 
 ```
-I'll research {TOPIC} across Reddit, X, and the web to find what's been discussed in the last 30 days.
+I'll research {TOPIC} across Reddit, X, YouTube, and the web to find what's been discussed in the last 30 days.
 
 Parsed intent:
 - TOPIC = {TOPIC}
@@ -84,9 +84,11 @@ python3 "{baseDir}/scripts/last30days.py" "$ARGUMENTS" --emit=compact 2>&1
 ```
 
 The script will automatically:
-- Detect available API keys
-- Run Reddit/X searches if keys exist
+- Detect available sources (API keys, yt-dlp)
+- Run Reddit/X/YouTube searches based on what's available
 - Signal if WebSearch is needed
+- Use `--diagnose` to check source availability before running
+- Use `--timeout SECS` to set a custom global timeout
 
 ---
 
@@ -130,6 +132,8 @@ For ALL query types:
 - `--quick` -> Faster, fewer sources (8-12 each)
 - (default) -> Balanced (20-30 each)
 - `--deep` -> Comprehensive (50-70 Reddit, 40-60 X)
+- `--diagnose` -> Show source availability and exit (useful for debugging)
+- `--timeout SECS` -> Set global timeout (default: 180s, quick: 90s, deep: 300s)
 
 ---
 
@@ -138,9 +142,9 @@ For ALL query types:
 **After all searches complete, internally synthesize (don't display stats yet):**
 
 The Judge Agent must:
-1. Weight Reddit/X sources HIGHER (they have engagement signals: upvotes, likes)
+1. Weight Reddit/X/YouTube sources HIGHER (they have engagement signals: upvotes, likes, views)
 2. Weight WebSearch sources LOWER (no engagement data)
-3. Identify patterns that appear across ALL three sources (strongest signals)
+3. Identify patterns that appear across ALL sources (strongest signals)
 4. Note any contradictions between sources
 5. Extract the top 3-5 actionable insights
 
@@ -271,7 +275,8 @@ KEY PATTERNS from the research:
 ---
 All agents reported back!
 |- Reddit: {N} threads | {N} upvotes | {N} comments
-|- X: {N} posts | {N} likes | {N} reposts (via xAI)
+|- X: {N} posts | {N} likes | {N} reposts
+|- YouTube: {N} videos | {N} views | {N} with transcripts
 |- Web: {N} pages (supplementary)
 |- Top voices: @{handle1} ({N} likes), @{handle2} | r/{sub1}, r/{sub2}
 ---
@@ -438,7 +443,7 @@ After delivering a prompt, end with:
 ```
 ---
 Expert in: {TOPIC} for {TARGET_TOOL}
-Based on: {n} Reddit threads ({sum} upvotes) + {n} X posts ({sum} likes) + {n} web pages
+Based on: {n} Reddit threads ({sum} upvotes) + {n} X posts ({sum} likes) + {n} YouTube videos ({sum} views) + {n} web pages
 
 Want another prompt? Just tell me what you're creating next.
 ```

@@ -1,12 +1,13 @@
 """WebSearch module for last30days skill.
 
-NOTE: WebSearch uses Claude's built-in WebSearch tool, which runs INSIDE Claude Code.
-Unlike Reddit/X which use external APIs, WebSearch results are obtained by Claude
-directly and passed to this module for normalization and scoring.
+NOTE: WebSearch uses the assistant's built-in web search tool, which runs
+inside the host environment. Unlike Reddit/X which use external APIs, web
+search results are obtained by the assistant directly and passed to this
+module for normalization and scoring.
 
 The typical flow is:
-1. Claude invokes WebSearch tool with the topic
-2. Claude passes results to parse_websearch_results()
+1. The assistant invokes its web search tool with the topic
+2. The assistant passes results to parse_websearch_results()
 3. Results are normalized into WebSearchItem objects
 """
 

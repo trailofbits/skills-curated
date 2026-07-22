@@ -24,7 +24,8 @@ DEPTH_CONFIG = {
     "deep": (40, 60),
 }
 
-X_SEARCH_PROMPT = """You have access to real-time X (Twitter) data. Search for posts about: {topic}
+X_SEARCH_PROMPT = """You have access to real-time X (Twitter) data. \
+Search for posts about: {topic}
 
 Focus on posts from {from_date} to {to_date}. \
 Find {min_items}-{max_items} high-quality, relevant posts.
