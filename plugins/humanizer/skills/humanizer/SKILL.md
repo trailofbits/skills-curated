@@ -7,7 +7,7 @@ description: |
   comprehensive "Signs of AI writing" guide. Detects and fixes patterns including:
   inflated symbolism, promotional language, superficial -ing analyses, vague
   attributions, em dash overuse, rule of three, AI vocabulary words, negative
-  parallelisms, and excessive conjunctive phrases. 30c5c8d (Update humanizer plugin to upstream v2.2.0)
+  parallelisms, and excessive conjunctive phrases.
 allowed-tools:
   - Read
   - Write
